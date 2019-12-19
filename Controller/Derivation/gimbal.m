@@ -9,7 +9,7 @@ syms l1y l2y 'real' % y dir
 syms a b 'real'     % gimbal angles
 
 % assume DCM is defined as alpha then beta (B*A*X)
-M = dcm_y(b) * dcm_x(a);
+M = dcm_x(a) * dcm_y(b);
 
 % NOTE: the gimbal pivot defines the origin
 
@@ -51,19 +51,25 @@ r_lc = 0.2; % z distance from pivot to combustion chamber mount
 r_1 = 0.1; % x and y distances from pivot to vehicle mount
 r_2 = 0.05; % x and y distances from pivot to combustion chamber mount (e.g. combustion chamber outer radius <= 5cm)
 
-x_neq = matlabFunction(subs(x_extension, [lc l1x l2x], [r_lc r_1 r_2]));
-y_neq = matlabFunction(subs(y_extension, [lc l1y l2y], [r_lc r_1 r_2]));
+x_neq = subs(x_extension, [lc l1x l2x a], [r_lc r_1 r_2 0]);
+y_neq = subs(y_extension, [lc l1y l2y, b], [r_lc r_1 r_2, 0]);
 
 % differentiate x actuator length with respect to beta angle
 % this provides change in actuator extension vs gimbal angle
 % multiplication by desired angular velocity provides required actuator velocity
-dx_neq_0 = matlabFunction(diff(x_neq_0, b));
+dx_neq_0 = matlabFunction(diff(x_neq, b));
 
 clf
-fsurf(dx_neq_0, deg2rad([-20 20]))
-zlabel("m / rad")
-ylabel("\beta (rad)")
-xlabel("\alpha (rad)")
+
+yyaxis left
+fplot(dx_neq_0, deg2rad([-12 12])); hold on;
+ylabel("m/rad")
+
+yyaxis right
+fplot(x_neq, deg2rad([-12 12]));
+ylabel("m")
+
+xlabel("\beta (rad)")
 
 
 
