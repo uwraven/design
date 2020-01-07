@@ -47,9 +47,9 @@ bspace = deg2rad([-13:0.5:13]);
 x_eq = x == x_extension;
 y_eq = y == y_extension;
 
-r_lc = 0.2; % z distance from pivot to combustion chamber mount
+r_lc = 0.3; % z distance from pivot to combustion chamber mount
 r_1 = 0.1; % x and y distances from pivot to vehicle mount
-r_2 = 0.05; % x and y distances from pivot to combustion chamber mount (e.g. combustion chamber outer radius <= 5cm)
+r_2 = 0.04; % x and y distances from pivot to combustion chamber mount (e.g. combustion chamber outer radius <= 5cm)
 
 x_neq = subs(x_extension, [lc l1x l2x a], [r_lc r_1 r_2 0]);
 y_neq = subs(y_extension, [lc l1y l2y, b], [r_lc r_1 r_2, 0]);
@@ -59,7 +59,9 @@ y_neq = subs(y_extension, [lc l1y l2y, b], [r_lc r_1 r_2, 0]);
 % multiplication by desired angular velocity provides required actuator velocity
 dx_neq_0 = matlabFunction(diff(x_neq, b));
 
-clf
+close all;
+
+figure();
 
 yyaxis left
 fplot(dx_neq_0, deg2rad([-12 12])); hold on;
@@ -67,6 +69,12 @@ ylabel("m/rad")
 
 yyaxis right
 fplot(x_neq, deg2rad([-12 12]));
+ylabel("m")
+
+figure(); clf;
+
+yyaxis left
+fplot(y_neq, deg2rad([-12 12])); hold on;
 ylabel("m")
 
 xlabel("\beta (rad)")
