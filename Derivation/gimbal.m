@@ -1,4 +1,4 @@
-addpath 'rotations'
+addpath './Helpers/rotations'
 
 % Define geometry symbolically %
 

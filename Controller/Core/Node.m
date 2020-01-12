@@ -6,6 +6,7 @@ properties (Access = public)
     children = []
     recordable logical = true
     recordableVariables = []
+    timer Timer
 end
 
 methods (Access = public)
@@ -19,6 +20,8 @@ methods (Access = public)
         if length(varargin) >= 3
             self.recordableVariables = varargin{3};
         end
+        self.timer = Timer();
+        self.timer.setLoopMethodHandle(@self.onLoop);
     end
 
     function addChild(self, node)
@@ -107,6 +110,9 @@ methods (Access = public)
                 names = [names child.traverseRecordableVariableNames(false)];
             end
         end
+    end
+
+    function onLoop(self, varargin)
     end
 
 end

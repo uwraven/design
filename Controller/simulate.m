@@ -1,11 +1,15 @@
 clear; clc;
 addpath('Core');
+addpath('Nodes');
 
-node = Node(true, "test");
-pnode = PhysicsNode();
-pnodechild = PhysicsNode();
-pnodechild.recordableVariables = ["mass", "inertiaTensor"];
-pnodechild.name = "test";
+node = Node("test", true);
+node.timer.setInterval(10);
+sns = Sensor(0.0, 10);
 
-node.addChild(pnode);
-pnode.addChild(pnodechild);
+clock = Clock("ms");
+
+for i = 1:100
+	clock.tick()
+	t = clock.getElapsedTime();
+	sns.timer.tick(t);
+end
