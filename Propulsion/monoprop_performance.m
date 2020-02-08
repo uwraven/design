@@ -5,11 +5,11 @@ addpath('isentropic')
 % Helpers
 psi2pa = @(psi) psi * 6894.76;
 r2a = @(r) pi .* r .^ 2;
-a2e = @(a) sqrt(a) ./ pi;
+a2e = @(a) sqrt(a / pi);
 
 % REQUIREMENTS
 TW = 1.1;
-thrust = 30 * 9.81 * TW; % N
+thrust = 15 * 9.81 * TW; % N
 
 % CHAMBER PARAMETERS
 p_c = psi2pa(200); % PSI chamber pressure
@@ -52,7 +52,7 @@ end
 inds = abs(thr - thrust) < 0.001;
 throat_area = areas(inds);
 mass_flow = md(inds);
-throat_radius = sqrt(throat_area) / pi;
+throat_radius = a2e(throat_area);
 throat_radius_mm = throat_radius * 1000;
 
 
