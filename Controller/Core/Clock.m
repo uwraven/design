@@ -5,7 +5,7 @@ properties (Access = public)
 end
 
 properties (Access = private)
-    tickRate uint16 % frequency
+    tickRate uint64 % frequency
     elapsedTime uint64 = 0
     paused logical = 0
 end
@@ -28,7 +28,7 @@ methods (Access = public)
                 self.tickRate = varargin{1};
             end
         else
-
+            
         end
     end
 

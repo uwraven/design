@@ -11,5 +11,5 @@ clock = Clock("ms");
 for i = 1:100
 	clock.tick()
 	t = clock.getElapsedTime();
-	sns.timer.tick(t);
+	sns.timer.tick(t)
 end
