@@ -1,11 +1,11 @@
 classdef Timer < handle
 
 properties (Access = public)
-    interval uint16 = 1
+    interval uint64 = 1
 end
 
 properties (Access = private)
-    localTime uint16 = 0
+    localTime uint64 = 0
     loopMethod
 end
 
@@ -17,9 +17,12 @@ methods (Access = public)
         end
     end
 
+    % Advance forward in time by one interval
     function tick(self, varargin)
         self.localTime = self.localTime + 1;
         if self.localTime == self.interval
+            % If enough time has passed, then call the super loop method
+            % and reset the timer
             self.loopMethod(varargin);
             self.localTime = 0;
         end
