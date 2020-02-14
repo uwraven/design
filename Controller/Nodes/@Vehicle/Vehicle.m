@@ -21,7 +21,7 @@ classdef Vehicle < handle
 	end
 
 	properties (Access = private)
-		stateReferenceHandle
+		commandFunction
 	end
 	
 	methods (Access = public)
@@ -41,8 +41,8 @@ classdef Vehicle < handle
 			
 		end
 
-		function setReferenceStateHandle(self, referenceHandle)
-			self.stateReferenceHandle = referenceHandle;
+		function setReferenceStateHandle(self, commandFunction)
+			self.commandFunction = commandFunction;
 		end
 	
 	end

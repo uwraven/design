@@ -40,7 +40,7 @@ methods (Access = public)
             thrusterInput = U(1) + U(5) / self.arm;
             self.pitchThrusters(1).pwm.setCommand(0);
             self.pitchThrusters(2).pwm.setCommand(0);
-            if (thrusterInput > 0); self.pitchThrusters(1).pwm.setCommand(thrusterInput);
+            if (thrusterInput < 0); self.pitchThrusters(1).pwm.setCommand(thrusterInput);
             else; self.pitchThrusters(2).pwm.setCommand(thrusterInput);
             end
         end
@@ -49,6 +49,11 @@ methods (Access = public)
     function tick(self, dt)
         % Resultant of form [Fx Fy Fz Mx My Mz]
         self.resultant = zeros(1,6);
+        % For each pair of thrusters:
+        % - compute the next step in time
+        % - if the PWM controller output is active, then solenoid is open
+        % - from thruster position and direction, compute the resulting forces and moments
+        % - add these to the sum of forces and moments from all thrusters
         for i = 1:2
             if self.modes.pitch
                 self.pitchThrusters(i).tick(dt);
