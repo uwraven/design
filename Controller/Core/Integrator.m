@@ -12,7 +12,8 @@ properties (Access = private)
 end
 
 methods (Access = public)
-    function self = Integrator() end
+    function self = Integrator() 
+	end
 
     function [t, X, U, O] = run(self, tspan, X_0)
         ts = length(tspan);
