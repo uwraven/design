@@ -20,6 +20,7 @@ properties (Access = private)
     slope
     bitLength
     gain
+    tHold = 0
 end
 
 methods (Access = public)
@@ -48,11 +49,9 @@ methods (Access = public)
     function tick(self, dt)
         % Integrate the sawtooth
         self.y = self.y + self.slope * dt;
+        % self.tHold = self.tHold + dt;
 
-        if (self.y > self.gain)
-            % Reset if y exceeds gain
-            self.y = 0;
-        end
+        % desiredOutput = 0;
 
         % Compare the sawtooth to input signal
         if (self.y > self.reference)
@@ -63,6 +62,15 @@ methods (Access = public)
             self.output = 1;
         end
 
+        % if (self.tHold > self.bitLength)
+        %     self.output = desiredOutput;
+        %     self.tHold = 0;
+        % end
+
+        if (self.y > self.gain)
+            % Reset if y exceeds gain
+            self.y = 0;
+        end
         % For more:
         % https://en.wikipedia.org/wiki/Pulse-width_modulation
     end

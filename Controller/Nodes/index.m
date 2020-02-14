@@ -9,11 +9,11 @@ O = zeros(length(ts), 8);
 
 for i = 1:length(ts)
 	RCS.tick(0.001);
-	R = 20 * cos(i / 100);
+	R = 18 * cos(i / 1000);
 	RCS.setCommands([R 0 0 0 0 0 0]);
 	[F, M, y] = RCS.getForceOnThisTick();
 	O(i,:) = [F M, y, R];
 end
 
-plot(ts, [O(:,1) O(:,8)])
+plot(ts, [O(:,1) O(:,7:8)])
 

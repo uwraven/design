@@ -8,7 +8,7 @@ properties (Access = private)
 end
 
 properties (SetAccess = private, GetAccess = public)
-    impulseDuration = 0.02;
+    impulseDuration
     position
     direction
     thrust
@@ -19,7 +19,8 @@ methods (Access = public)
         self.position = [0 0 0]';
         self.direction = [0 0 0]';
         self.thrust = nominalThrust;
-        self.pwm = PWMController(self.impulseDuration, self.thrust);
+        self.impulseDuration = 0.05;
+        self.pwm = PWMController(self.impulseDuration, nominalThrust);
     end
 
     function tick(self, dt)
