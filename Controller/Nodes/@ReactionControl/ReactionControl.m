@@ -48,12 +48,12 @@ methods (Access = public)
 
     function tick(self, dt)
         % Resultant of form [Fx Fy Fz Mx My Mz]
-        self.resultant = zeros(1,6);
         % For each pair of thrusters:
         % - compute the next step in time
         % - if the PWM controller output is active, then solenoid is open
         % - from thruster position and direction, compute the resulting forces and moments
         % - add these to the sum of forces and moments from all thrusters
+        self.resultant = zeros(1,6);
         for i = 1:2
             if self.modes.pitch
                 self.pitchThrusters(i).tick(dt);

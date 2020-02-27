@@ -10,7 +10,7 @@ classdef Vehicle < handle
 
 		% Vehicle state is composed of [r v q w]
 		% For 2D, state is [x dx y dy th dth]
-		state
+		state 
 
 		% Outer loop controllers
 		controllers
