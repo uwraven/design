@@ -59,7 +59,7 @@ massdata = zeros(5,length(tt));     % m_lqd mdot_lqd m_vpr mdot_vpr m_eva
 nozzledata = zeros(6,length(tt));   % Pe_eng Te_eng Ve_eng Pe_rcs Te_rcs Ve_rcs
 
 %% Tank Integrator
-for i = 1:1:length(tt)
+for i = 1:1:2 %length(tt)
     % Step 1: Remove mass, expand volume 
     m_lqd = subplus(m_lqd - mdot_lqd*dt);
     m_vpr = subplus(m_vpr - mdot_vpr*dt);
