@@ -7,11 +7,11 @@ m_dry = 10; % kg
 m_flow = 0.0008185; % kg / s / N
 J = 1/12 * (l)^2;
 
-% Control gains
+% Control gainså
 % kp ki kd
-kr1 = [1.0 0.0 8.0];
-kr2 = [4.0 0.0 15.0];
-kth = [0.05 0.5 200.0];
+kr1 = [0 0 0];
+kr2 = [0 0 0];
+kth = [0.212 0.15 15];
 K = [ kr1; kr2; kth ];
 
 % Actuator properties
@@ -24,9 +24,9 @@ GLIM = deg2rad([-10 10]);
 global t_prev total_err; t_prev = 0; total_err = [0 0 0];
 
 % X = [r1 r2 v1 v2 th dth mass]
-X_initial = [0 50 0 0 0 0 m_wet];
-Xd = [10 20 0 0 0 0];
-tspan = 0:0.001:50;
+X_initial = [0 0 0 0 deg2rad(10) 0 m_wet];
+Xd = [0 0 0 0 0 0];
+tspan = 0:0.0001:50;
 
 of = @(t, X) odefunc(t, X, Xd, K, L, ELIM, RLIM, GLIM, J, m_flow);
 
@@ -64,9 +64,13 @@ d_err = -[X(3) X(4) X(6)];
 total_err = total_err + err * (t - t_prev);
 
 % Compute control gains (forces / torques)
-u_r1 = K(1,1) * err(1) + K(1,2) * total_err(1) + K(1,3) * d_err(1); % F_x
-u_r2 = K(2,1) * err(2) + K(2,2) * total_err(2) + K(2,3) * d_err(2); % F_y
-u_r3 = K(3,1) * err(3) + K(3,2) * total_err(3) + K(3,3) * d_err(3); % T
+k = K;
+k(1,:) = k(1,:) * X(7);
+k(2,:) = k(2,:) * X(7);
+k(3,:) = k(3,:) * (X(7) * J);
+u_r1 = k(1,1) * err(1) + k(1,2) * total_err(1) + k(1,3) * d_err(1); % F_x
+u_r2 = k(2,1) * err(2) + k(2,2) * total_err(2) + k(2,3) * d_err(2); % F_y
+u_r3 = k(3,1) * err(3) + k(3,2) * total_err(3) + k(3,3) * d_err(3); % T
 
 controller_outputs = [ u_r1 u_r2 u_r3 ];
 
@@ -85,16 +89,16 @@ Fb = M * [u_r1; u_r2];
 allocation_outputs = [Fe Fr g];
 
 % Clamp actuator inputs
-Fe = clamp(Fe, ELIM);
-Fr = clamp(Fr, RLIM);
-g = clamp(g, GLIM);
+% Fe = clamp(Fe, ELIM);
+% Fr = clamp(Fr, RLIM);
+% g = clamp(g, GLIM);
 
 clamped_allocation_outputs = [Fe Fr g];
 
 % Compute global frame forces on the vehicle
 Fxg = cos(theta) * (Fr + Fe * sin(g)) - Fe * cos(g) * sin(theta);
 Fyg = sin(theta) * (Fr + Fe * sin(g)) + Fe * cos(g) * cos(theta);
-Tth = L(1) * Fe * sin(g) - L(2) * Fr;
+Tth = L(1) * Fe * sin(g) - L(2) * Fr; 
 
 actuator_outputs = [ Fxg Fyg Tth ];
 

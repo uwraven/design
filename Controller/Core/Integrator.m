@@ -8,16 +8,13 @@ properties (Access = public)
 end
 
 properties (Access = private)
-    lx int = 0
-    lu int = 0
-    lo int = 0
+
 end
 
 methods (Access = public)
-    function self = Integrator()
-    end
+    function self = Integrator() end
 
-    function [t, X, U, O] = run(self, tspan, X_0, X_D)
+    function [t, X, U, O] = run(self, tspan, X_0)
         ts = length(tspan);
         t = tspan;
         X = zeros(ts, length(X_0));
@@ -41,13 +38,11 @@ methods (Access = public)
                 return;
             end
         end
-    end
+	end
+end
 
-    function setBreakFunction(self, newHandle)
-        self.breakFunction = newHandle;
-    end
+methods (Access = private)
+    
+end
 
-    function setStateTransitionFunction(self, newHandle)
-        self.transitionFunction = newHandle
-    end
 end
