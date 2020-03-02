@@ -12,6 +12,7 @@ properties (Access = private)
 end
 
 methods (Access = public)
+    
     function self = Integrator() 
 	end
 

@@ -11,9 +11,10 @@ properties (Access = private)
 end
 
 properties (SetAccess = private, GetAccess = public)
-    resultant = [0 0 0 0 0 0]
-    thrust
-    arm
+    resultant = [0 0 0 0 0 0] % Thrust and torque vector produced by RCS at any time t
+    thrust % Magnitude of thrust produced by RCS nozzle
+    r1 % Length of arm to RCS pod from CoG
+    r2 % Radius to roll thrusters
 end
 
 methods (Access = public)
