@@ -1,18 +1,17 @@
 addpath('Core');
 
-q = [1 0 0 0]'
-
-w = @(dt) [1 2 4]' + [0.01 0.01 0.005]' * dt;
-
 dt = 0.001;
 ts = 0:dt:10;
 
+q = zeros(length(ts), 7);
+q(1,:) = [1 0 0 0 0 0 0];
+
 tic
 
-for i = 1:length(ts)
-	q = Quaternion.rk4N(q, w, dt);
+for i = 1:length(ts)-1
+	q(i+1, :) = Quaternion.integrateAttitude(q(i, :)', [1 0 0]', dt);
 end
 
 toc
 
-q
+plot(ts, q(:,1:4))

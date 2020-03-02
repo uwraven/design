@@ -1,7 +1,7 @@
 classdef Quaternion
 % Instance of a quaternion
 % Be careful using this class, it is slower to instantiate and allocate in memory than just an array
-% Use the optimized, array based static methods to compute quaternion products and integrals if possible
+% Use the optimized, array based static methods to compute quaternion products and integrals during runtime
 
 properties (Access = public)
 
@@ -38,7 +38,6 @@ end
 
 methods
     % Operator overloads
-
     function q = plus(q1, q2)
         q = Quaternion([
             q1.w + q2.w
@@ -77,6 +76,8 @@ methods
 
 
     % Property getters
+    % These provide _slow_ access to member properties
+    % consider accessing self.arr
     function q = get.q(self)
         q = self.arr;
     end
@@ -104,22 +105,43 @@ end
 
 methods (Static)
 
-    function qn = rk4N(q, w, dt)
-        % Use RK4 integration scheme followed by brute force normalization
-        % w is a handle, describing angular rates as a function of time from integration step start
-        % this function takes dt as a parameter
-        % http://ancs.eng.buffalo.edu/pdf/ancs_papers/2013/geom_int.pdf
-
-        k1 = dt * 1 / 2 * Quaternion.skew(w(0)) * q;
-        k2 = dt * 1 / 2 * Quaternion.skew(w(1 / 2 * dt)) * (q + k1 / 2);
-        k3 = dt * 1 / 2 * Quaternion.skew(w(1 / 2 * dt)) * (q + k2 / 2);
-        k4 = dt * 1 / 2 * Quaternion.skew(w(dt)) * (q + k3);
-
-        qn = q + 1 / 6 * dt * (k1 + 2 * k2 + 2 * k3 + k4);
-        qn = qn / norm(qn);
-
+    function X = integrateAttitude(X0, a, dt)
+        % from an initial state X0 (q and w) compute change in attitude / rates
+        % from an applied angular acceleration over dt
+        X = RK4(@(X, dt) [1 / 2 * Quaternion.skew(X(5:7)) * X(1:4); a], X0, dt);
+        X(1:4) = X(1:4) / norm(X(1:4));
     end
 
+    function qr = quatProductArr(q1, q2)
+        qr = [
+            q1(1) * q2(1) - q1(2) * q2(2) - q1(3) * q2(3) - q1(4) * q2(4)
+            q1(1) * q2(2) + q1(2) * q2(1) + q1(3) * q2(4) - q1(4) * q2(3)
+            q1(1) * q2(3) - q1(2) * q2(4) + q1(3) * q2(1) + q1(4) * q2(2)
+            q1(1) * q2(4) + q1(2) * q2(3) - q1(3) * q2(2) + q1(4) * q2(1)
+        ];
+    end
+
+    function wr = vecProductArr(q1, w)
+        wr = [
+            q1(1) * w(1) + q1(3) * w(3) - q1(4) * w(2)
+            q1(1) * w(2) - q1(2) * w(3) + q1(4) * w(1)
+            q1(1) * w(3) + q1(2) * w(2) - q1(3) * w(1)
+        ];
+    end
+
+    function W = skew(w)
+        % From an angular rate vector, return the skew symmetric rate matrix
+        % This shouldn't be implemented in the Quaternion class, but Matlab is being dumb with paths, so here we are
+        % TODO:: put this somewhere else
+        W = [
+            0       -w(3)   w(2)    w(1)
+            w(3)    0       -w(1)   w(2)
+            -w(2)   w(1)    0       w(3)
+            -w(1)   -w(2)   -w(3)   0
+        ];
+    end
+
+    % These methods utilize the member get properties and are generally slower
     function qr = quatProduct(q1, q2)
         qr = [
             q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z
@@ -134,34 +156,6 @@ methods (Static)
         wr = quatProduct(q1, qv);
     end
 
-    function qr = quatProductArr(q1, q2)
-        qr = [
-            q1(1) * q2(1) - q1(2) * q2(2) - q1(3) * q2(3) - q1(4) * q2(4)
-            q1(1) * q2(2) + q1(2) * q2(1) + q1(3) * q2(4) - q1(4) * q2(3)
-            q1(1) * q2(3) - q1(2) * q2(4) + q1(3) * q2(1) + q1(4) * q2(2)
-            q1(1) * q2(4) + q1(2) * q2(3) - q1(3) * q2(2) + q1(4) * q2(1)
-        ];
-    end
-
-    function wr = vecProductArr(q1, w)
-        qr = [
-            q1(1) * q2(2) + q1(3) * q2(4) - q1(4) * q2(3)
-            q1(1) * q2(3) - q1(2) * q2(4) + q1(4) * q2(2)
-            q1(1) * q2(4) + q1(2) * q2(3) - q1(3) * q2(2)
-        ];
-    end
-
-    function W = skew(w)
-        % From an angular rate vector, return the skew symmetric rate matrix
-        % This shouldn't be composed in the Quaternion class, but Matlab is being dumb with paths, so here we are
-        % TODO:: put this somewhere else
-        W = [
-            0       -w(3)   w(2)    w(1)
-            w(3)    0       -w(1)   w(2)
-            -w(2)   w(1)    0       w(3)
-            -w(1)   -w(2)   -w(3)   0
-        ];
-    end
     
 end
 
