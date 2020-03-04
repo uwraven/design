@@ -5,6 +5,7 @@ classdef PWMController < handle
 % If the command signal is greater than the sawtooth, turn on
 % If the command signal is less than the sawtooth, turn off
 % This produces a pwm output that has the similar impulse as the command but with a small phase delay due to sampling
+% Keep in mind this doesn't bound the duration of the impulse
 
 properties (Access = public)
     output = 0

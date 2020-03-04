@@ -4,7 +4,7 @@ classdef Quaternion
 % Use the optimized, array based static methods to compute quaternion products and integrals during runtime
 
 properties (Access = public)
-
+    
 end
 
 properties (Access = private)
@@ -105,14 +105,7 @@ end
 
 methods (Static)
 
-    function X = integrateAttitude(X0, a, dt)
-        % from an initial state X0 (q and w) compute change in attitude / rates
-        % from an applied angular acceleration over dt
-        X = RK4(@(X, dt) [1 / 2 * Quaternion.skew(X(5:7)) * X(1:4); a], X0, dt);
-        X(1:4) = X(1:4) / norm(X(1:4));
-    end
-
-    function qr = quatProductArr(q1, q2)
+    function qr = productArr(q1, q2)
         qr = [
             q1(1) * q2(1) - q1(2) * q2(2) - q1(3) * q2(3) - q1(4) * q2(4)
             q1(1) * q2(2) + q1(2) * q2(1) + q1(3) * q2(4) - q1(4) * q2(3)
@@ -129,16 +122,24 @@ methods (Static)
         ];
     end
 
-    function W = skew(w)
-        % From an angular rate vector, return the skew symmetric rate matrix
-        % This shouldn't be implemented in the Quaternion class, but Matlab is being dumb with paths, so here we are
-        % TODO:: put this somewhere else
-        W = [
-            0       -w(3)   w(2)    w(1)
-            w(3)    0       -w(1)   w(2)
-            -w(2)   w(1)    0       w(3)
-            -w(1)   -w(2)   -w(3)   0
-        ];
+    function w = rotateBy(v, q)
+        % wq = q * v * qc
+        q = reshape(q, 4, 1);
+        v = reshape(v, 3, 1);
+        wq = Quaternion.productArr(q, Quaternion.productArr([0; v], Quaternion.conjArr(q)));
+        w = wq(2:4);
+    end
+
+    function qe = error(q1, q2)
+        qe = Quaternion.productArr(q1, Quaternion.conjArr(q2));
+    end
+
+    function qc = conjArr(q)
+        qc = [q(1) -q(2) -q(3) -q(4)]';
+    end
+
+    function q = fromVec(qv)
+        q = [sqrt(1 - norm(qv)) reshape(qv, 1, 3)]';
     end
 
     % These methods utilize the member get properties and are generally slower
