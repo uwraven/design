@@ -32,7 +32,7 @@ vehicle.allocator.setActuatorGeometry(0.3, 1.0, 0.1);
 vehicle.allocator.clamped = true;
 
 % Initial conditions
-vehicle.setState([0 0 0 0 0 0 0.05 0 0.1 0 0 0]);
+vehicle.setState([1 0 0 0 0 0 0 0 0 0 0 0]);
 vehicle.setReference([0 0 0 0 0 0 0 0 0 0 0 0]);
 
 dt = 0.001;
