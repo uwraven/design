@@ -51,13 +51,6 @@ for i = 1:length(ts)
 	U(i, 1:6) = vehicle.uGlobalRealized';
 	U(i, 7:12) = vehicle.uAllocated';
 	M(i) = vehicle.m;
-	
-% 	if ts(i) < 15
-% 		vehicle.setReference([5 0 0 0 0 0 0 0 0 0 0 0]);
-% 	else
-% 		vehicle.setReference([0 0 0 0 0 0 0 0 0 0 0 0]);
-% 	end
-		
 end
 
 
