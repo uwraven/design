@@ -7,7 +7,7 @@ m_dry = 10; % kg
 m_flow = 0.0008185; % kg / s / N
 J = 1/12 * (l)^2;
 
-% Control gainså
+% Control gainsï¿½
 % kp ki kd
 kr1 = [0 0 0];
 kr2 = [0 0 0];

@@ -8,7 +8,8 @@ m_flow = 0.0008185; % kg / s / N
 J = 1/12 * (l)^2;
 
 % Controller
-kr1 = [2.0 0.01 40];
+% kr1 = [2.0 0.01 40];
+kr1 = zeros(1,3);
 kr2 = [15.0 0.04 110.0];
 kth = [5.0 0.59 89];
 K = [ kr1; kr2; kth ];
@@ -21,9 +22,9 @@ GLIM = deg2rad([-10 10]);
 AS = [0 0 0];
 
 % Integrator
-X_initial = [0 0 0 0 deg2rad(2) 0];
+X_initial = [0 2 0 0 0 0];
 Xd = [0 0 0 0 0 0];
-dt = 0.00001;
+dt = 0.0001;
 tspan = 0:dt:20;
 
 t = tspan';
@@ -39,11 +40,17 @@ iErr = zeros(1, 3);
 delay = [0.0 0.0 0.0];
 delay_steps = int32(delay / dt);
 
+LL = zeros(length(tspan), 7);
+
+U_R3_PASS = 0;
+
 % Perform integration
 for i = 1:length(tspan)
 	
     % Current state
     Xk = X(i, :);
+	
+	ts = t(i);
 
     % Proportional error
     pErr = [Xd(1)-Xk(1) Xd(2)-Xk(2) Xd(5)-Xk(5)];
@@ -74,27 +81,37 @@ for i = 1:length(tspan)
     theta = Xk(5);
     Mat = [cos(theta) sin(theta); -sin(theta) cos(theta)];
     Fb = Mat * [u_r1; u_r2];
-			
+				
     % Allocate inputs
-	% 	g = atan2(u_r3, (Fb(2) * (L(1) - L(2) * Fb(1) - L(2))));
-	% 	if (g > pi)
-	% 		g = g - 2 * pi
-	% 	end
-
-		g = 0;
-		if (Fb(2) * (L(1) - L(2) * Fb(1) - L(2))) > 1e-6
-			g = atan(u_r3 / (Fb(2) * (L(1) - L(2) * Fb(1) - L(2))));
-		end
 	
-% 	g = atan(u_r3 / (Fb(2) * (L(1) - L(2) * Fb(1) - L(2))));
+% 	a = 0.95;
+% 	U_R3_PASS = U_R3_PASS * a + u_r3 * (1-a);
+% 	NUM = 0;
+% 	if abs(U_R3_PASS) < 1e-5
+% 		NUM = 0;
+% 	else
+% 		NUM = U_R3_PASS;
+% 	end
+NUM = u_r3;
+
+	DEN = Fb(2) * (L(1) - L(2) * Fb(1) - L(2));
+	r = NUM / DEN;
+	at = atan(NUM / DEN);
+	at2 = atan2(NUM, DEN);
+	
+	LL(i,:) = [NUM DEN r at at2 Fb(1) Fb(2)];
+	
+	g = at;
+	
+	[g, AS(3)] = clamp(g, GLIM);
 
     Fe = Fb(2) / cos(g);
+	
+	[Fe, AS(1)] = clamp(Fe, ELIM);
+
     Fr = Fb(1) - Fe * sin(g);
 
-    % Clamp inputs  
-    [Fe, AS(1)] = clamp(Fe, ELIM);
     [Fr, AS(2)] = clamp(Fr, RLIM);
-    [g, AS(3)] = clamp(g, GLIM);
 	
 	U(i, :) = [Fe, Fr, g];
 			
@@ -152,6 +169,10 @@ figure(3); clf; plot(t, [X(:,5) X(:,6)]); legend('\theta', 'd\theta'); grid on;
 figure(4); clf; plot(t, [U(:,1:2) U_shifted(:,1:2)]); legend('U_{Engine}', 'U_{RCS}'); grid on;
 figure(5); clf; plot(t, [U(:,3) U_shifted(:,3)]); legend('\gamma_c', '\gamma_d'); grid on;
 figure(6); clf; plot(t, U_global); legend('F_x', 'F_y', 'T'); grid on;
+figure(7); clf; plot(t, LL(:,1:5)); legend('NUM', 'DEN', 'NUM/DEN', 'atan', 'atan2'); grid on;
+figure(8); clf; plot(t, LL(:,6:7)); legend('fbx', 'fby'); grid on;
+
+
 
 
 function [out, saturated] = clamp(x, lim)
