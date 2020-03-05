@@ -62,7 +62,7 @@ classdef Vehicle < handle
 			];
 
 			% Allocate inputs
-			self.uAllocated = self.allocator.allocateLinear(uRequestedLocal);
+			self.uAllocated = self.allocator.linearAllocation(uRequestedLocal);
 
 			% Realize actuator inputs
 			self.uGlobalRealized = self.recoverAllocatedInputs();
@@ -97,12 +97,13 @@ classdef Vehicle < handle
 			dX = [
 				reshape(x(4:6), 3, 1)
 				reshape(self.uGlobalRealized(1:3) / self.m + [-9.81 0 0]', 3, 1)
-				reshape(1 / 2 * skew(x(11:13)) * x(7:10), 4, 1)
+				reshape(1 / 2 * skew4(x(11:13)) * x(7:10), 4, 1)
 				reshape(self.JInv * self.uGlobalRealized(4:6), 3, 1)
 			];
 		end
 
 		function U_g = recoverAllocatedInputs(self)
+			% Converts an allocated set of actuator commands to forces in the global frame
 			U_g = [
 				self.uAllocated(1)
 				self.uAllocated(2) + self.uAllocated(6)

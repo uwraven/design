@@ -16,7 +16,7 @@ function [A, B] = LinearizedDynamics(m, I)
 
     dr = v;
     dv = 1 / m * F;
-    dq = 1 / 2 * skew(w) * q;
+    dq = 1 / 2 * skew4(w) * q;
     dw = I^-1 * (M - cross(w, I * w));
 
     x = [

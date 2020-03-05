@@ -39,7 +39,7 @@ methods (Access = public)
 
     end
 
-    function U = allocateLinear(self, Ur)
+    function U = linearAllocation(self, Ur)
         % U is a vector [Fx Fy Fz Mx My Mz] in body frame
 
         % Solve the linear EOM

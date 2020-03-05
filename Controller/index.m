@@ -28,11 +28,11 @@ vehicle.allocator.setActuatorLimits([
 	-10 10
 	-5 5
 ]);
-vehicle.allocator.setActuatorGeometry(0.5, 1.0, 0.1);
+vehicle.allocator.setActuatorGeometry(0.3, 1.0, 0.1);
 vehicle.allocator.clamped = true;
 
 % Initial conditions
-vehicle.setState([100 30 0 0 0 0 0 0 0 0 0 0]);
+vehicle.setState([0 0 0 0 0 0 0.05 0 0.1 0 0 0]);
 vehicle.setReference([0 0 0 0 0 0 0 0 0 0 0 0]);
 
 dt = 0.001;
@@ -52,11 +52,11 @@ for i = 1:length(ts)
 	U(i, 7:12) = vehicle.uAllocated';
 	M(i) = vehicle.m;
 	
-	if ts(i) < 15
-		vehicle.setReference([5 0 0 0 0 0 0 0 0 0 0 0]);
-	else
-		vehicle.setReference([0 0 0 0 0 0 0 0 0 0 0 0]);
-	end
+% 	if ts(i) < 15
+% 		vehicle.setReference([5 0 0 0 0 0 0 0 0 0 0 0]);
+% 	else
+% 		vehicle.setReference([0 0 0 0 0 0 0 0 0 0 0 0]);
+% 	end
 		
 end
 
