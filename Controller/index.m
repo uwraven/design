@@ -7,6 +7,7 @@ vehicle = Vehicle();
 vehicle.m = 15;
 vehicle.cf = 0.0006; % kg / s / N
 vehicle.J = diag(ones(3, 1));
+vehicle.wfc = 0.3;
 
 % Get A, B matrices from EOM
 [A, B] = LinearizedDynamics(vehicle.m, vehicle.J);

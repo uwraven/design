@@ -10,6 +10,7 @@ classdef Vehicle < handle
 		cf
 		J
 		JInv
+		wfc
 
 		% LQR Controller and allocator
 		control_lqr
@@ -21,12 +22,13 @@ classdef Vehicle < handle
 		% uRequested is the input vector containing global forces and body frame moments
 		% uAllocated is the computed allocation using a linear or nonlinear strategy
 		% uGlobalRealized is the realized global frame forces and body frame moments resulting from converted actuator commands, this is used to perform integration
-		% R is the reference state: position, velocity, stability frame quaternion, body frame angular rates
+		% r is the reference state: position, velocity, stability frame quaternion, body frame angular rates
 		x
 		uAllocated
 		uRequested
 		uGlobalRealized
-		R
+		r
+		rFiltered
 	end
 
 	% properties (Dependent)
@@ -42,12 +44,18 @@ classdef Vehicle < handle
 			% TODO: Convert to varargin
 			self.control_lqr = LQRController();
 			self.allocator = Allocator();
+			self.m = 1;
+			self.J = diag(ones(3, 1));
+			self.wfc = 0;
 		end
 
 		function tick(self, dt)
+
+			self.updateFilteredReference(dt);
+
 			% get state errors, including error quaternion
-			XR = self.R - [self.x(1:6); self.x(8:13)];
-			qs = Quaternion.fromVec(self.R(7:9));
+			XR = self.rFiltered - [self.x(1:6); self.x(8:13)];
+			qs = Quaternion.fromVec(self.rFiltered(7:9));
 			qe = Quaternion.error(qs, self.x(7:10));
 			XR(7:9) = qe(2:4);
 
@@ -70,14 +78,15 @@ classdef Vehicle < handle
 			self.integrateState(dt);
 		end
 
-		function setReference(self, R)
-			self.R = reshape(R, length(R), 1);
+		function setReference(self, r)
+			self.r = reshape(r, length(r), 1);
 		end
 
 		function setState(self, x)
 			qs = Quaternion.fromVec(x(7:9));
 			X0 = reshape(x, length(x), 1);
 			self.x = [X0(1:6); qs; X0(10:12)];
+			self.rFiltered = X0;
 		end
 
 		function setLQRGains(self, K)
@@ -113,6 +122,12 @@ classdef Vehicle < handle
 				self.uAllocated(6) * self.allocator.L_R1 + self.uAllocated(2) * self.allocator.L_E
 			];
 		end
+
+		function updateFilteredReference(self, dt)
+			% Currently only low passes position and velocity requirements
+			a = 2 * pi * dt * self.wfc;
+			self.rFiltered(1:3) = self.rFiltered(1:3) * (1 - a) + self.r(1:3) * a;
+		end
 	end
 
 	methods
@@ -120,6 +135,13 @@ classdef Vehicle < handle
 			self.J = J;
 			self.JInv = J^-1;
 		end
+
+		% function set.wfc(self, wfc)
+		% 	if (wfc > 1000)
+		% 		error('wfc is too large');
+		% 	end
+		% end
 	end
+	
 end
 

@@ -12,7 +12,7 @@ properties (Access = private)
     err_d
     err_i
     A = 0; % Premultiplier used for tuning around system properties
-    cf = 1; % Derivative tracking
+    tc = 1; % Derivative tracking
 end
 
 methods (Access = public)
@@ -26,7 +26,8 @@ methods (Access = public)
     function U = tick(self, dt, u, saturated)
         % Update the error rate of change
         err_d = (u - self.err_prev) / dt;
-        self.err_d = self.err_d * (1 - self.cf) + err_d * self.cf;
+        a = dt / (self.tc + dt);
+        self.err_d = self.err_d * (1 - a) + err_d * a;
 
         % Update integral error only if controls are not saturated
         if (~saturated)
@@ -50,8 +51,8 @@ methods (Access = public)
         self.A = A;
     end
 
-    function setDerivativeTracking(self, cf)
-        self.cf = cf;
+    function setDerivativeTracking(self, tc)
+        self.tc = tc;
     end
 
     function K = getGains(self)
