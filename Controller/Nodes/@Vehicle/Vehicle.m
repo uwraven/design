@@ -97,8 +97,11 @@ classdef Vehicle < handle
 
 	methods (Access = private)
 		function integrateState(self, dt)
+			% Integrate
 			self.x = RK4(@(x, dt) self.stateTransitionFunc(x, dt), self.x, dt);
+			% Normalize attitude quat
 			self.x(7:10) = self.x(7:10) / norm(self.x(7:10));
+			% Update vehicle mass
 			self.m = self.m - self.cf * self.uAllocated(1) * dt;
 		end
 

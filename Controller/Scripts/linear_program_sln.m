@@ -2,50 +2,81 @@
 % ARCC Design document
 % Matt Vredevoogd 02/28/2020
 
-syms Fxr Fyr Fzr Mxr Myr Mzr 'real'; % Requested inputs
-syms Fxa Fya Fza Mxa Mya Mza 'real'; % Allocated inputs
-syms Fex Fey Fez Frr Frp Fry 'real'; % Actuator commands
-syms le lr1 lr2 'real' 'positive'; % Geometry
+clc; clear;
 
-% Linear input mapping (H)
-% (These equations are just for reference)
-Fex = Fxr;
-Fey = 1 / (le - lr1) * (Mzr - Fyr * lr1);
-Fez = 1 / (le - lr1) * (Myr - Fzr * lr1);
-Frr = Mxr / (2 * lr2);
-Frp = 1 / (le - lr1) * (Fzr * le - Myr);
-Fry = 1 / (le - lr1) * (Fyr * le - Mzr);
+% Actuator moment arms
+l1 = 1; % engine
+l2 = 1; % rcs cg
+l3 = 0.1; % rcs radial
 
-H = [
-	1 0 0 0 0 0
-	0 1 0 0 0 1
-	0 0 1 0 1 0
-	0 0 0 2 * lr2 0 0
-	0 0 le 0 lr1 0
-	0 le 0 0 0 lr1
+% Ur = [
+% 	0.1
+% 	0.005
+% 	100
+% 	0.02
+% 	0.004
+% 	0.3
+% ];
+
+% H = [ 
+% 	1 0 0 -1 -1 0 1 1 0
+% 	0 1 0 0 0 -1 0 0 1
+% 	0 0 1 0 0 0 0 0 0
+% 	0 -l1 0 0 0 -l2 0 0 l2
+% 	l1 0 0 l2 l2 0 -l2 -l2 0
+% 	0 0 0 -l3 l3 0 -l3 l3 0
+% ];
+
+Ur = [
+	10
+	0
+	0
+	0
+	0
 ];
 
-% Vector of requested inputs
-ur = [Fxr Fyr Fzr Mxr Myr Mzr]';
+H = [ 
+	1 0 -1 -1 0 1 1 0
+	0 1 0 0 -1 0 0 1
+	0 -l1 0 0 -l2 0 0 l2
+	l1 0 l2 l2 0 -l2 -l2 0
+	0 0 -l3 l3 0 -l3 l3 0
+];
 
-% Vector of actuators
-v = [Fex Fey Fez Frr Frp Fry]';
+% X Y torque allocation 
+Aeq = [ Ur, H ];
 
-% Compute allocated inputs from the linear mapping
-ua = H*v;
+Beq = Ur;
 
-% Define the objective function as the difference between allocated and requested
-f = ua - ur;
+f = [1 0 0 0 0 0 0 0 0];
 
-% Constraints
-syms Fex_min Fex_max Fey_min Fey_max Fez_min Fez_max Frr_min Frr_max Fry_min Fry_max Frp_min Frp_max 'real';
-lb = [Fex_min Fey_min Fez_min Frr_min Frp_min Fry_min]';
-ub = [Fex_max Fey_max Fez_max Frr_max Frp_max Fry_max]';
+lb = [
+	0
+	-15
+	-15
+	0
+	0
+	0
+	0
+	0
+	0
+];
 
-%% Solve the linear program
+ub = [
+	1
+	15
+	15
+	10
+	10
+	10
+	10
+	10
+	10
+];
 
+Ua = linprog(f, [], [], Aeq, Beq, lb, ub);
 
-
-% lb = subs(lb, lb, [
-
+Uu = pinv(H)*Ur
+Ua
+H*Ua(2:end)
 

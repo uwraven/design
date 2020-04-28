@@ -17,7 +17,8 @@ methods (Access = public)
     end
 
     function self = setActuatorLimits(self, limits)
-        self.limits = reshape(limits, 6, 2);
+        % Expects 9x1 vector
+        self.limits = limits;
     end
 
     function self = setActuatorArms(self, L)
@@ -42,24 +43,50 @@ methods (Access = public)
     end
 
     function U = nonlinearAllocation(self, Ur)
+        % Ur = [Fx Fy Fz Mx My Mz];
+
+        B = atan(-Ur(1), Ur(3));
+        G = atan(-Ur(2) * sin(B), Ur(1));
+        Fe = -Ur(2) / sin(G);
+        FRx = self.L(1) / self.L(2) * Fe * cos(G) * sin(B) - 1 / self.L(2) * Ur(5);
+        FRy = -self.L(1) / self.L(3) * Fe * sin(G) + 1 / self.L(2) * Ur(4);
+        FRz = Ur(6);
+
+        U = [B G Fe FRx FRy FRz];
 
     end
 
     function U = linearAllocation(self, Ur)
-        % U is a vector [Fx Fy Fz Mx My Mz] in body frame
+        % Ur = [Fx Fy Fz Mx My Mz];
 
         % Solve the linear EOM
         U = self.Hc * Ur;
 
-        % Dumb actuator clamping for now
-        % TODO: implement allocation strategy
-        if (self.clamped)
-            for i = 1:6
-                U(i) = clamp(self.limits(i, :), U(i));
+    end
+
+    function U = allocate(self, Ur)
+
+        U = linearAllocation(Ur);
+
+        saturated = self.saturation(U);
+    
+        if (~saturated) 
+            return
+        else
+            % Allocation strategy...
+            return
+        end
+    end
+
+    function saturated = saturation(self, U)
+        saturated = false;
+        for i = 1:length(U)
+            if (self.limits(i, 1) < U && self.limits(i, 2) > U)
+                saturated = true;
             end
         end
-
     end
+
 end
 
 end

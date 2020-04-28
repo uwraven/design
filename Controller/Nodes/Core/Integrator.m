@@ -23,7 +23,7 @@ methods (Access = public)
 
         for ii = 1:ts
 
-            % Get the next state, the user is responible for the entire state transition
+            % Get the next state, the user is responsible for the entire state transition
             % This allows for a nonlinear state transition (ex: quaternion rotation)
             [X_i, U_i, O_i] = self.transitionFunction(t, X, U);
 
