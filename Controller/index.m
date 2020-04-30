@@ -46,7 +46,7 @@ M = zeros(length(ts), 1);
 
 % Fixed time step integration
 for i = 1:length(ts)
-	vehicle.tick(dt);
+	vehicle.update(dt);
 	% Save vehicle states
 	X(i, :) = vehicle.x';
 	U(i, 1:6) = vehicle.uGlobalRealized';

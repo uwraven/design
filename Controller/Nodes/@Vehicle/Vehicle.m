@@ -1,25 +1,28 @@
 classdef Vehicle < handle
 
 	properties (Access = public)
-		% Unused cascading controller blocks
-		% control_pos
-		% control_att
-		% control_rate
 
-		m
-		cf
-		J
-		JInv
-		wfc
+		% Vehicle plant properties
+		m = 10;
+		cf = 1;
+		J = diag(ones(3));
+		JInv = diag(ones(3));
 
-		% LQR Controller and allocator
-		control_lqr
+		% Guidance and control
+		trajectoryPlanner
+		controller
 		allocator
+
+		% Hardware
+		gimbal
+		engine
+		rcs
 	end
+
 
 	properties (GetAccess = public, SetAccess = private)
 		% x is the state vector containing global position, velocity, error quaternion, and body frame angular rates
-		% uRequested is the input vector containing global forces and body frame moments
+		% uRequested is the input vector containing global forces and body frame moments computed by the controller
 		% uAllocated is the computed allocation using a linear or nonlinear strategy
 		% uGlobalRealized is the realized global frame forces and body frame moments resulting from converted actuator commands, this is used to perform integration
 		% r is the reference state: position, velocity, stability frame quaternion, body frame angular rates
@@ -27,60 +30,43 @@ classdef Vehicle < handle
 		uAllocated
 		uRequested
 		uGlobalRealized
-		r
-		rFiltered
-	end
-
-	% properties (Dependent)
-	% 	JInv;
-	% end
-
-	properties (Access = private)
-
 	end
 	
+
 	methods (Access = public)
+
 		function self = Vehicle()
-			% TODO: Convert to varargin
-			self.control_lqr = LQRController();
+
+			% Guidance and Control
+			self.trajectoryPlanner = TrajectoryPlanner();
+			self.controller = Controller();
 			self.allocator = Allocator();
-			self.m = 1;
-			self.J = diag(ones(3, 1));
-			self.wfc = 0;
+
+			% Hardware
+			self.gimbal = Gimbal();
+			self.engine = Engine();
+			self.rcs = ReactionControl();
+
 		end
 
-		function tick(self, dt)
 
-			self.updateFilteredReference(dt);
+		function update(self, dt)
 
-			% get state errors, including error quaternion
-			XR = self.rFiltered - [self.x(1:6); self.x(8:13)];
-			qs = Quaternion.fromVec(self.rFiltered(7:9));
-			qe = Quaternion.error(qs, self.x(7:10));
-			XR(7:9) = qe(2:4);
+			% Update trajectory
+			self.trajectoryPlanner.update(dt);
 
-			% Get inputs from LQR control block
-			self.uRequested = self.control_lqr.inputs(XR);
-			self.uRequested(1) = self.uRequested(1) + 9.81 * self.m;
-
-			% Convert requested inputs to body frame
-			uRequestedLocal = [
-				Quaternion.rotateBy(self.uRequested(1:3), self.x(7:10))
-				self.uRequested(4:6)
-			];
+			% Compute requested inputs from controller
+			self.uRequested = self.controller.inputs(self.x, self.trajectoryPlanner.filteredCoordinate);
 
 			% Allocate inputs
-			self.uAllocated = self.allocator.linearAllocation(uRequestedLocal);
+			self.uAllocated = self.allocator.linearAllocation(self.x, self.uRequested);
 
 			% Realize actuator inputs
 			self.uGlobalRealized = self.recoverAllocatedInputs();
 			
-			self.integrateState(dt);
+			self.integratePlant(dt);
 		end
 
-		function setReference(self, r)
-			self.r = reshape(r, length(r), 1);
-		end
 
 		function setState(self, x)
 			qs = Quaternion.fromVec(x(7:9));
@@ -89,6 +75,7 @@ classdef Vehicle < handle
 			self.rFiltered = X0;
 		end
 
+		
 		function setLQRGains(self, K)
 			self.control_lqr.setGains(K);
 		end
@@ -96,13 +83,13 @@ classdef Vehicle < handle
 	end
 
 	methods (Access = private)
-		function integrateState(self, dt)
-			self.x = RK4(@(x, dt) self.stateTransitionFunc(x, dt), self.x, dt);
+		function integratePlant(self, dt)
+			self.x = RK4(@(x, dt) self.plantDynamics(x, dt), self.x, dt);
 			self.x(7:10) = self.x(7:10) / norm(self.x(7:10));
 			self.m = self.m - self.cf * self.uAllocated(1) * dt;
 		end
 
-		function dX = stateTransitionFunc(self, x, dt)
+		function dX = plantDynamics(self, x, dt)
 			dX = [
 				reshape(x(4:6), 3, 1)
 				reshape(self.uGlobalRealized(1:3) / self.m + [-9.81 0 0]', 3, 1)
@@ -122,12 +109,6 @@ classdef Vehicle < handle
 				self.uAllocated(6) * self.allocator.L_R1 + self.uAllocated(2) * self.allocator.L_E
 			];
 		end
-
-		function updateFilteredReference(self, dt)
-			% Currently only low passes position and velocity requirements
-			a = 2 * pi * dt * self.wfc;
-			self.rFiltered(1:3) = self.rFiltered(1:3) * (1 - a) + self.r(1:3) * a;
-		end
 	end
 
 	methods
@@ -135,12 +116,6 @@ classdef Vehicle < handle
 			self.J = J;
 			self.JInv = J^-1;
 		end
-
-		% function set.wfc(self, wfc)
-		% 	if (wfc > 1000)
-		% 		error('wfc is too large');
-		% 	end
-		% end
 	end
 	
 end

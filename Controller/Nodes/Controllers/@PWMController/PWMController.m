@@ -47,7 +47,7 @@ methods (Access = public)
         y = self.y;
     end
 
-    function tick(self, dt)
+    function update(self, dt)
         % Integrate the sawtooth
         self.y = self.y + self.slope * dt;
         % self.tHold = self.tHold + dt;

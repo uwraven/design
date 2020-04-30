@@ -23,8 +23,8 @@ methods (Access = public)
         self.pwm = PWMController(self.impulseDuration, nominalThrust);
     end
 
-    function tick(self, dt)
-        self.pwm.tick(dt);
+    function update(self, dt)
+        self.pwm.update(dt);
     end
 
     function place(self, P, D)
@@ -34,7 +34,7 @@ methods (Access = public)
         self.direction = D;
     end
 
-    function [F, M] = getForceOnThisTick(self)
+    function [F, M] = getForceOnThisupdate(self)
         % Force acts in opposite direction of nozzle exit plane normal vector
         F = -self.direction' * self.thrust;
         % Compute the cross product to get resultant moments about cg

@@ -47,7 +47,7 @@ methods (Access = public)
         end
     end
 
-    function tick(self, dt)
+    function update(self, dt)
         % Resultant of form [Fx Fy Fz Mx My Mz]
         % For each pair of thrusters:
         % - compute the next step in time
@@ -57,16 +57,16 @@ methods (Access = public)
         self.resultant = zeros(1,6);
         for i = 1:2
             if self.modes.pitch
-                self.pitchThrusters(i).tick(dt);
+                self.pitchThrusters(i).update(dt);
                 if (self.pitchThrusters(i).pwm.output)
-                    [F, M] = self.pitchThrusters(i).getForceOnThisTick();
+                    [F, M] = self.pitchThrusters(i).getForceOnThisupdate();
                     self.resultant = self.resultant + [F' M'];
                 end
             end
         end
     end
 
-    function [F, M, y] = getForceOnThisTick(self)
+    function [F, M, y] = getForceOnThisupdate(self)
         F = self.resultant(1:3);
         M = self.resultant(4:6);
         y = self.pitchThrusters(1).pwm.getY();
