@@ -9,11 +9,13 @@ end
 
 methods
     function self = Gimbal()
-        actuatorGamma = LinearActuator()
-        actuatorBeta = LinearActuator()
+        actuatorGamma = LinearActuator();
+        actuatorBeta = LinearActuator();
     end
 
     function update(dt)
+        actuatorGamma.update(dt);
+        actuatorBeta.update(dt);
     end
 end
 

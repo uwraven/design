@@ -43,7 +43,7 @@ classdef Vehicle < handle
 
 			% Hardware
 			self.gimbal = Gimbal();
-			self.engine = Engine();
+			self.engine = EngineAssembly();
 			self.rcs = ReactionControl();
 
 		end

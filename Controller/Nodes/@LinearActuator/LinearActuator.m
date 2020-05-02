@@ -20,6 +20,14 @@ methods
         u = self.targetExtension - self.x;
         saturated = x > lims(1) && x < lims(2);
         self.controller.update(dt, u, saturated);
+
+        % Linear Actuator is assumed to actuate ideally with no delay
+        % TODO:: Model plant
+        self.x = self.reference;
+    end
+
+    function setTarget(self, x)
+        self.reference = x;
     end
 
     function setLimits(self, lims)
