@@ -2,6 +2,7 @@ classdef ColdGasThruster < handle
 
 properties (Access = public)
     pwm PWMController
+    firing = false;
 end
 
 properties (Access = private)
@@ -25,6 +26,7 @@ methods (Access = public)
 
     function update(self, dt)
         self.pwm.update(dt);
+        self.firing = pwm.output > 0;
     end
 
     function place(self, P, D)
@@ -32,13 +34,6 @@ methods (Access = public)
         % direction describes the normal vector of RCS exit plane (i.e. opposite of resultant thrust)
         self.position = P;
         self.direction = D;
-    end
-
-    function [F, M] = getForceOnThisupdate(self)
-        % Force acts in opposite direction of nozzle exit plane normal vector
-        F = -self.direction' * self.thrust;
-        % Compute the cross product to get resultant moments about cg
-        M = cross(-self.direction' * self.thrust, self.position');
     end
 end
 

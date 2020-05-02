@@ -1,9 +1,11 @@
 classdef Gimbal < handle
 
-properties
+properties (Access = public)
     actuatorGamma
     actuatorBeta
 end
+
+
 
 methods
     function self = Gimbal()

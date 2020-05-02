@@ -14,7 +14,6 @@ classdef Vehicle < handle
 		allocator
 
 		% Hardware
-		gimbal
 		engine
 		rcs
 	end

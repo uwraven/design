@@ -3,7 +3,7 @@ classdef LinearActuator < handle
 properties
     controller;
     enableAntiWindup = true;
-    targetExtension = 0;
+    reference
 end
 
 properties (GetAccess = public, SetAccess = private)
