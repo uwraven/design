@@ -16,9 +16,9 @@ properties (SetAccess = private, GetAccess = public)
 end
 
 methods (Access = public)
-    function self = ColdGasThruster(nominalThrust)
-        self.position = [0 0 0]';
-        self.direction = [0 0 0]';
+    function self = ColdGasThruster(nominalThrust, P, D)
+        self.position = P;
+        self.direction = D;
         self.thrust = nominalThrust;
         self.impulseDuration = 0.05;
         self.pwm = PWMController(self.impulseDuration, nominalThrust);
@@ -27,13 +27,6 @@ methods (Access = public)
     function update(self, dt)
         self.pwm.update(dt);
         self.firing = pwm.output > 0;
-    end
-
-    function place(self, P, D)
-        % position is some 3 vector
-        % direction describes the normal vector of RCS exit plane (i.e. opposite of resultant thrust)
-        self.position = P;
-        self.direction = D;
     end
 end
 

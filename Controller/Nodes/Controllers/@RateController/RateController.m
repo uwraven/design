@@ -1,4 +1,4 @@
-classdef P2Controller < handle
+classdef RateController < handle
 
 properties
     Pq = diag(zeros(1, 3));
@@ -6,7 +6,7 @@ properties
 end
 
 methods
-    function self = P2Controller()
+    function self = RateController()
     end
 
     function U = inputs(self, qv, w)

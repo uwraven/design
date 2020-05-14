@@ -3,14 +3,22 @@ classdef EngineAssembly < handle
 properties 
     gimbal
     thrust
+    thrustRange
     specificThrust % inverse of thrust specific mass flow
     engineArm = 0.1;
     gimbalArm = 0.2;
 end
 
+properties (SetAccess = private, GetAccess = public)
+    localizedResultant
+    trilateration
+end
+
 methods
     function self = EngineAssembly()
         self.gimbal = Gimbal()
+        self.localizedResultant = zeros(6, 1);
+        self.thrustRange = [0 1];
     end
 
     function setTarget(self, reference)
@@ -21,6 +29,9 @@ methods
         [Fe, g, b] = nonlinearInputs(reference);
 
         % Compute resultant engine pointing vector
+        % Describes the physical position in space where linear
+        % actuators connect to the engine
+        % (ignores small radial distance from engine center)
         Ev = engineArm * [
             sin(g) * cos(b)
             sin(b)
@@ -36,18 +47,25 @@ methods
     function update(self, dt)
         % Engine is assumed to produce thrust ideally with no delay
         % TODO:: Add engine plant model + thrust controller
+        self.
         self.gimbal.update(dt);
 
         % Get engine direction from actuator extensions
-        % This function does not account for the radial extension from
+        % This function does not account for the radial distance from
         % the lower engine mount to linear actuator
-        [x, y, z] = trilaterate(...
+        [x y z] = trilaterate(...
             self.engineArm,...
             self.gimbal.actuatorGamma.x,...
             self.gimbal.actuatorBeta.x,...
             self.gimbalArm,...
             self.gimbalArm);
+
+        thrustDirection = [x y z]' / norm([x y z]);
+        self.trilateration = [x y z];
         
+        % Compute localized resultant from current thrust and gimbal trilateration
+        localizedResultant = self.thrust * [thrustDirection 0 0 0];
+
     end
 end
 

@@ -12,9 +12,9 @@ methods
         trajectoryController = struct(...
             'x', PIDController(1, 0, 0),...
             'y', PIDController(1, 0, 0),...
-            'z', PIDController(1, 0, 0),...
+            'z', PIDController(1, 0, 0)...
         );
-        rateController = P2Controller();
+        rateController = RateController();
     end
 
     function update(self, dt)
@@ -31,7 +31,7 @@ methods
 
         % 3) Compute error between vehicle quaternion and requested acceleration quaternion
 
-        % 4) Compute angular acceleration using P2 controller
+        % 4) Compute angular acceleration using rate controller
 
         % Return compute global frame requests in U
         

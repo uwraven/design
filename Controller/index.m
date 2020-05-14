@@ -3,11 +3,44 @@ addpath(genpath('Nodes'));
 % Create vehicle object
 vehicle = Vehicle();
 
+
+%%%%%%%%%% CONFIGURE VEHICLE PLANT %%%%%%%%%%
+
 % Set vehicle properties
-vehicle.m = 15;
-vehicle.cf = 0.0006; % kg / s / N
-vehicle.J = diag(ones(3, 1));
-vehicle.wfc = 0.3;
+vehicle.m = 15;					% Vehicle mass (kg)
+vehicle.J = diag(ones(3, 1));	% Vehicle inertial tensor
+
+
+%%%%%%%%%% CONFIGURE ACTUATORS %%%%%%%%%%
+
+% Set RCS actuators according to thruster mixing physical layout
+coldGasThrusterMax = 10; 	% Maximum possible RCS thrust
+RCSCOMLength = 0.8;			% Distance from center of mass to rcs array
+RCSRadialLength = 0.01;		% Distance from center of rcs pod to thruster mount (bisymmetric)
+
+vehicle.rcs.thrusters = [	
+	ColdGasThruster(coldGasThrusterMax, [RCSRadialLength -RCSRadialLength -RCSCOMLength], [1 0 0]);
+	ColdGasThruster(coldGasThrusterMax, [RCSRadialLength RCSRadialLength -RCSCOMLength], [1 0 0]);
+	ColdGasThruster(coldGasThrusterMax, [0 RCSRadialLength -RCSCOMLength], [0 1 0]);
+	ColdGasThruster(coldGasThrusterMax, [-RCSRadialLength RCSRadialLength -RCSCOMLength], [-1 0 0]);
+	ColdGasThruster(coldGasThrusterMax, [-RCSRadialLength -RCSRadialLength -RCSCOMLength], [-1 0 0]);
+	ColdGasThruster(coldGasThrusterMax, [0 -RCSRadialLength -RCSCOMLength], [0 -1 0]);
+];
+
+% Set EngineAssembly properties
+engineThrustMax = 160;			% N
+engineThrustMin = 90;			% N
+specificThrust = 1 / 0.0006;	% N / kg / s
+gimbalRange = 6;				% Maximum gimbal throw (deg)
+
+vehicle.engine.gimbal.range = deg2rad(gimbalRange);
+vehicle.engine.specificThrust = specificThrust;
+vehicle.engine.thrustRange = [engineThrustMin engineThrustMax];
+
+
+
+
+
 
 % Get A, B matrices from EOM
 [A, B] = LinearizedDynamics(vehicle.m, vehicle.J);
@@ -16,21 +49,21 @@ vehicle.wfc = 0.3;
 Q = diag([1 0.7 0.7 20 20 20 1 1 1 1 1 1]);
 R = diag([1 1 1 10 10 10]);
 K = lqr(A, B, Q, R); % Compute gains from linearized EOM, Q, R
-vehicle.setLQRGains(K);
+
 
 % Configure allocation layer
 % Limits by (min, max)
 % These lims are for the linear allocation strategy
-vehicle.allocator.setActuatorLimits([
-	60 180
-	-18 18
-	-18 18
-	-10 10
-	-10 10
-	-5 5
-]);
-vehicle.allocator.setActuatorGeometry(0.3, 1.0, 0.1);
-vehicle.allocator.clamped = true;
+% vehicle.allocator.setActuatorLimits([
+% 	60 180
+% 	-18 18
+% 	-18 18
+% 	-10 10
+% 	-10 10
+% 	-5 5
+% ]);
+% vehicle.allocator.setActuatorGeometry(0.3, 1.0, 0.1);
+% vehicle.allocator.clamped = true;
 
 % Initial conditions
 vehicle.setState([1 0 0 0 0 0 0 0 0 0 0 0]);

@@ -4,12 +4,12 @@ classdef Vehicle < handle
 
 		% Vehicle plant properties
 		m = 10;
-		cf = 1;
 		J = diag(ones(3));
 		JInv = diag(ones(3));
 
 		% Guidance and control
 		trajectoryPlanner
+		estimator
 		controller
 		allocator
 
@@ -25,6 +25,8 @@ classdef Vehicle < handle
 		% uAllocated is the computed allocation using a linear or nonlinear strategy
 		% uGlobalRealized is the realized global frame forces and body frame moments resulting from converted actuator commands, this is used to perform integration
 		% r is the reference state: position, velocity, stability frame quaternion, body frame angular rates
+
+		% Vehicle, allocator, and controller states
 		x
 		uAllocated
 		uRequested
@@ -42,7 +44,6 @@ classdef Vehicle < handle
 			self.allocator = Allocator();
 
 			% Hardware
-			self.gimbal = Gimbal();
 			self.engine = EngineAssembly();
 			self.rcs = ReactionControl();
 
@@ -74,18 +75,13 @@ classdef Vehicle < handle
 			self.rFiltered = X0;
 		end
 
-		
-		function setLQRGains(self, K)
-			self.control_lqr.setGains(K);
-		end
-
 	end
 
 	methods (Access = private)
 		function integratePlant(self, dt)
 			self.x = RK4(@(x, dt) self.plantDynamics(x, dt), self.x, dt);
 			self.x(7:10) = self.x(7:10) / norm(self.x(7:10));
-			self.m = self.m - self.cf * self.uAllocated(1) * dt;
+			self.m = self.m - self.engine.specificThrust * self.uAllocated(1) * dt;
 		end
 
 		function dX = plantDynamics(self, x, dt)

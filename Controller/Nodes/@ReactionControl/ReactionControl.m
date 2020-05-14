@@ -5,7 +5,7 @@ properties (Access = private)
 end
 
 properties (SetAccess = private, GetAccess = public)
-    resultant = [0 0 0 0 0 0];
+    localizedResultant = zeros(6, 1);
 end
 
 methods (Access = public)
@@ -20,13 +20,13 @@ methods (Access = public)
         % - if the PWM controller output is active, then solenoid is open
         % - from thruster position and direction, compute the resulting forces and moments
         % - add these to the sum of forces and moments from all thrusters
-        self.resultant = zeros(1,6);
+        self.localizedResultant = zeros(1,6);
         for i = 1:length(self.thrusters)
             thruster = self.thrusters(i);
             thruster.update(dt);
             if (thruster.firing)
                 F = -thruster.direction * thruster.thrust;
-                self.resultant = self.resultant + [
+                self.localizedResultant = self.localizedResultant + [
                     F,
                     cross(thruster.position, F)
                 ];
