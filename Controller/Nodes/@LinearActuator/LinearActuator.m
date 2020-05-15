@@ -8,7 +8,7 @@ end
 
 properties (GetAccess = public, SetAccess = private)
     x = 0;
-    lims = [0 100];
+    limits = [0 100];
 end
 methods
     function self = LinearActuator()
@@ -17,8 +17,8 @@ methods
 
     function update(self, dt)
         % compute tracking error
-        u = self.targetExtension - self.x;
-        saturated = x > lims(1) && x < lims(2);
+        u = self.reference - self.x;
+        saturated = self.x > self.limits(1) && self.x < self.limits(2);
         self.controller.update(dt, u, saturated);
 
         % Linear Actuator is assumed to actuate ideally with no delay
@@ -26,7 +26,7 @@ methods
         self.x = self.reference;
     end
 
-    function setTarget(self, x)
+    function setReference(self, x)
         self.reference = x;
     end
 

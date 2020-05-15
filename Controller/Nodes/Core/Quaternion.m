@@ -130,6 +130,14 @@ methods (Static)
         w = wq(2:4);
     end
 
+    function w = reverseRotateBy(v, q)
+        % wq = qc * v * q
+        q = reshape(q, 4, 1);
+        v = reshape(v, 3, 1);
+        wq = Quaternion.productArr(Quaternion.conjArr(q), Quaternion.productArr([0; v],q));
+        w = wq(2:4);
+    end
+
     function qe = error(q1, q2)
         qe = Quaternion.productArr(q1, Quaternion.conjArr(q2));
     end

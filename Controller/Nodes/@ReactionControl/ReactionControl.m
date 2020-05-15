@@ -20,7 +20,7 @@ methods (Access = public)
         % - if the PWM controller output is active, then solenoid is open
         % - from thruster position and direction, compute the resulting forces and moments
         % - add these to the sum of forces and moments from all thrusters
-        self.localizedResultant = zeros(1,6);
+        self.localizedResultant = zeros(6, 1);
         for i = 1:length(self.thrusters)
             thruster = self.thrusters(i);
             thruster.update(dt);
@@ -38,6 +38,10 @@ methods (Access = public)
         for i = 1:length(self.thrusters)
             self.thrusters(i).pwm.reference = U(i);
         end
+    end
+
+    function setThrusters(self, thrusters)
+        self.thrusters = thrusters;
     end
 end
 

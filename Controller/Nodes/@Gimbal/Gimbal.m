@@ -17,7 +17,6 @@ methods
         self.actuatorGamma.update(dt);
         self.actuatorBeta.update(dt);
     end
-
 end
 
 methods (Access = private)

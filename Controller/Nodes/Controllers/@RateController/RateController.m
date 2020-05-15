@@ -12,6 +12,11 @@ methods
     function U = inputs(self, qv, w)
         U = -Pq * qv - Pw * w;
     end
+
+    function setGains(self, Pq, Pw)
+        self.Pq = Pq;
+        self.Pw = Pw;
+    end
 end
 
 end

@@ -1,6 +1,5 @@
 clc; clear; 
 addpath(genpath('Nodes'));
-format long;
 
 raven = Raven();
 
@@ -14,13 +13,13 @@ K = lqr(A, B, Q, R); % Compute gains from linearized EOM, Q, R
 
 
 % Initial conditions
-raven.setState([0 0 1 0 0 0 0 0 0 0 0 0]);
+raven.setState([1 0 0 0 0 0 0 0 0 0 0 0]);
 raven.trajectoryPlanner.targetCoordinate = [0 0 0]';
 raven.controller = LQRController();
 raven.controller.setGains(K);
 
 dt = 0.001;
-ts = 0:dt:8;
+ts = 0:dt:30;
 
 X = zeros(length(ts), 13);
 U = zeros(length(ts), 21);
@@ -52,12 +51,12 @@ title('Position');
 % plot(ts, X(:,1:3)); grid on;
 % title('Position'); legend('X', 'Y', 'Z');
 
-figure(3); clf;
-plot(ts, X(:,7:10)); grid on;
-title('Attitude'); legend('q0', 'q1', 'q2', 'q3');
+% figure(3); clf;
+% plot(ts, X(:,7:10)); grid on;
+% title('Attitude'); legend('q0', 'q1', 'q2', 'q3');
 
 figure(4); clf;
-plot(ts, U(:,1:6)); grid on;
+plot(ts, U(:,:12)); grid on;
 title('Requested Inputs'); legend('FX', 'FY', 'FZ', 'MX', 'MY', 'MZ');
 
 figure(5); clf;

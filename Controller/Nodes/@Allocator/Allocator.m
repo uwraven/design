@@ -16,17 +16,21 @@ methods (Access = public)
     function self = Allocator()
     end
 
+    function update(self, dt)
+        
+    end
+
     function self = setActuatorLimits(self, limits)
-        self.limits = reshape(limits, 6, 2);
+        self.limits = reshape(limits, 9, 2);
     end
 
     function self = setActuatorArms(self, L)
 
         self.L = L;
 
-        L1 = L(1);
-        L2 = L(2);
-        L3 = L(3);
+        L1 = L(1);      % Arm from COM to engine
+        L2 = L(2);      % Arm from COM to rcs
+        L3 = L(3);      % Arm from rcs center to thruster
 
         self.H = [
             1 0 0 -1 -1 0 0 1 1
@@ -37,27 +41,28 @@ methods (Access = public)
             0 0 0 -L3 L3 0 0 -L3 L3
         ];
 
-        self.Hc = inv(self.H);
+        self.Hc = pinv(self.H);
 
     end
 
     function U = nonlinearAllocation(self, Ur)
-
+        
     end
 
     function U = linearAllocation(self, Ur)
-        % U is a vector [Fx Fy Fz Mx My Mz] in body frame
+        % Ur is a vector [Fx Fy Fz Mx My Mz] in body frame
+        % U is a vector of actuator inputs
 
         % Solve the linear EOM
         U = self.Hc * Ur;
 
         % Dumb actuator clamping for now
         % TODO: implement allocation strategy
-        if (self.clamped)
-            for i = 1:6
-                U(i) = clamp(self.limits(i, :), U(i));
-            end
-        end
+        % if (self.clamped)
+        %     for i = 1:9
+        %         U(i) = clamp(self.limits(i, :), U(i));
+        %     end
+        % end
 
     end
 end

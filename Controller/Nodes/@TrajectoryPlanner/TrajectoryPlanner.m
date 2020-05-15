@@ -18,11 +18,16 @@ methods
     end
 
     function update(self, dt)
-        a = 2 * pi * dt * self.filterCutoffFrequency
+        a = 2 * pi * dt * self.filterCutoffFrequency;
         self.filteredCoordinate = self.filteredCoordinate * (1 - a) + self.targetCoordinate * a;
     end
 
+end
 
+methods
+    function set.targetCoordinate(self, target)
+        self.targetCoordinate = reshape(target, 3, 1);
+    end
 end
 
 end

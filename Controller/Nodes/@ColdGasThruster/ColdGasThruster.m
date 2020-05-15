@@ -26,7 +26,7 @@ methods (Access = public)
 
     function update(self, dt)
         self.pwm.update(dt);
-        self.firing = pwm.output > 0;
+        self.firing = self.pwm.output > 0;
     end
 end
 
