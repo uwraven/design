@@ -1,16 +1,17 @@
 classdef RateController < handle
 
 properties
-    Pq = diag(zeros(1, 3));
-    Pw = diag(zeros(1, 3));
+    Pq = diag(ones(3, 1))
+    Pw = diag(ones(3, 1))
 end
 
 methods
     function self = RateController()
+        
     end
 
     function U = inputs(self, qv, w)
-        U = -Pq * qv - Pw * w;
+        U = -self.Pq * qv - self.Pw * w;
     end
 
     function setGains(self, Pq, Pw)

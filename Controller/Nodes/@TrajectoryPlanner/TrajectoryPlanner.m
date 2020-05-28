@@ -5,7 +5,7 @@ classdef TrajectoryPlanner < handle
 
 properties (Access = public)
     targetCoordinate = [0 0 0]';
-    filterCutoffFrequency = 0
+    filterCutoffFrequency = 0;
 end
 
 properties (GetAccess = public, SetAccess = private)
@@ -19,7 +19,14 @@ methods
 
     function update(self, dt)
         a = 2 * pi * dt * self.filterCutoffFrequency;
+        if (a > 1)
+            a = 1;
+        end
         self.filteredCoordinate = self.filteredCoordinate * (1 - a) + self.targetCoordinate * a;
+    end
+
+    function setInitialTarget(self, target)
+        self.filteredCoordinate = target;
     end
 
 end

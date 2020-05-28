@@ -1,7 +1,7 @@
 classdef Estimator < handle
 
 properties (Access = public)
-
+    enabled = true;
 end
 
 methods

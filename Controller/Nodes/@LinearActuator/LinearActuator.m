@@ -18,8 +18,8 @@ methods
     function update(self, dt)
         % compute tracking error
         u = self.reference - self.x;
-        saturated = self.x > self.limits(1) && self.x < self.limits(2);
-        self.controller.update(dt, u, saturated);
+        % saturated = self.x > self.limits(1) && self.x < self.limits(2);
+        % self.controller.update(dt, u, saturated);
 
         % Linear Actuator is assumed to actuate ideally with no delay
         % TODO:: Model plant

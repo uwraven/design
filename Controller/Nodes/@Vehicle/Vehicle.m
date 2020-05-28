@@ -15,7 +15,7 @@ classdef Vehicle < handle
 		controller
 		allocator
 
-		% Hardware
+		% Hardware (Plants)
 		engine
 		rcs
 	end
@@ -31,6 +31,7 @@ classdef Vehicle < handle
 		x
 		uAllocated
 		uRequestedGlobal
+		uRealizedLocal
 		uRealizedGlobal
 	end
 	
@@ -43,6 +44,7 @@ classdef Vehicle < handle
 			self.trajectoryPlanner = TrajectoryPlanner();
 			self.controller = CascadedController();
 			self.allocator = Allocator();
+			self.estimator = Estimator();
 
 			% Hardware
 			self.engine = EngineAssembly();
@@ -52,33 +54,54 @@ classdef Vehicle < handle
 
 
 		function update(self, dt)
-
-			% Update control
 			self.trajectoryPlanner.update(dt);
 			self.controller.update(dt);
 			self.allocator.update(dt);
 
+			if (self.estimator.enabled)
+				% TODO estimator
+			end
+
 			% Compute requested inputs from controller
-			uRequestedGlobal = self.controller.inputs(self.x, self.trajectoryPlanner.filteredCoordinate);
-			self.uRequestedGlobal = uRequestedGlobal;
+			% Get global acceleration and angular acceleration from controller node
+			uRequestedGlobalController = self.controller.inputs(self.x, self.trajectoryPlanner.filteredCoordinate, dt);
 
-			% Convert requested inputs from global to local frame
-			uRequestedLocal = self.getLocalRequest();
+			% Add gravity feedforward to requested acceleration
+			gravityFeedforward = -9.81;
+			self.uRequestedGlobal = uRequestedGlobalController + [0 0 gravityFeedforward 0 0 0]';
 
-			% Allocate inputs
-			uAllocated = self.allocator.linearAllocation(uRequestedLocal);
-			self.uAllocated = uAllocated;
+			if (self.allocator.enabled)
 
-			self.engine.setAllocation(uAllocated(1:3));
-			self.rcs.setAllocation(uAllocated(4:end));
+				% Convert global acceleration request to vehicle fixed frame
+				uRequestedLocal = self.getLocalRequest();
 
-			% Update actuator plants
-			self.engine.update(dt);
-			self.rcs.update(dt);
-			
-			% Realize actuator inputs
-			self.getResultant();
-			uRealizedGlobal = self.uRealizedGlobal;
+				% Convert requests to forces and torques
+				uRequestedLocalForce = [
+					self.m * uRequestedLocal(1:3)
+					self.J * uRequestedLocal(4:6)
+				];
+
+				% Allocate inputs
+				uAllocated = self.allocator.clampedLinearAllocation(uRequestedLocalForce);
+				self.uAllocated = uAllocated;
+
+				% Assign inputs to actuators
+				self.engine.setAllocation(self.uAllocated(1:3));
+				self.rcs.setAllocation(self.uAllocated(4:end));	
+				
+				self.engine.update(dt);
+				self.rcs.update(dt);
+
+				resultant = self.getRequestResultant();
+				self.uRealizedGlobal = resultant;
+
+			else
+				% Integrate plants to maintain simulation continuity
+				% self.engine.update(dt);
+				% self.rcs.update(dt);
+				% No allocation and no actuation, use pure and global controller outputs
+				self.uRealizedGlobal = self.uRequestedGlobal * self.m;
+			end
 			
 			self.integratePlant(dt);
 
@@ -93,6 +116,7 @@ classdef Vehicle < handle
 			qs = Quaternion.fromVec(x(7:9));
 			X0 = reshape(x, length(x), 1);
 			self.x = [X0(1:6); qs; X0(10:12)];
+			self.trajectoryPlanner.setInitialTarget(self.x(1:3));
 		end
 
 	end
@@ -102,29 +126,29 @@ classdef Vehicle < handle
 		function integratePlant(self, dt)
 			self.x = RK4(@(x, dt) self.plantDynamics(x, dt), self.x, dt);
 			self.x(7:10) = self.x(7:10) / norm(self.x(7:10));
-			self.m = self.m - self.engine.specificThrust * self.uAllocated(1) * dt;
+			% self.m = self.m - self.engine.specificThrust * self.uAllocated(1) * dt;
 		end
 
 		function dX = plantDynamics(self, x, dt)
 			dX = [
-				reshape(x(4:6), 3, 1)
-				reshape(self.uRealizedGlobal(1:3) / self.m + [0 0 0]', 3, 1)
-				reshape(1 / 2 * skew4(x(11:13)) * x(7:10), 4, 1)
-				reshape(self.JInv * self.uRealizedGlobal(4:6), 3, 1)
+				x(4:6)
+				self.uRealizedGlobal(1:3) / self.m + [0 0 9.81]'
+				1 / 2 * skew4(x(11:13)) * x(7:10)
+				self.JInv * self.uRealizedGlobal(4:6)
 			];
 		end
 
-		function getResultant(self)
+		function uResultant = getRequestResultant(self)
 
 			% Get vehicle frame forces
-			uVehicleRealized = [
+			self.uRealizedLocal = [
 				self.engine.localizedResultant(1:3) + self.rcs.localizedResultant(1:3),
 				cross([0 0 self.engineMountingDistance]', self.engine.localizedResultant(4:6)) + cross([0 0 -self.rcsMountingDistance]', self.rcs.localizedResultant(4:6))
 			];
 
-			self.uRealizedGlobal = [
-				Quaternion.rotateBy(uVehicleRealized(1:3), self.x(7:10));
-				uVehicleRealized(4:6)
+			uResultant = [
+				Quaternion.rotateBy(self.uRealizedLocal(1:3), self.x(7:10));
+				self.uRealizedLocal(4:6)
 			];
 
 		end

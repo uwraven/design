@@ -1,15 +1,15 @@
 classdef PIDController < handle
 
 properties (GetAccess = public, SetAccess = private)
-    kp = 1;
+    kp = 1
     ki = 0
     kd = 0
 end
 
 properties (Access = private)
-    uPrevious
-    err_d
-    err_i
+    uPrevious = 0;
+    err_d = 0;
+    err_i = 0;
     derivativeTrackingFrequency = 0; % Derivative tracking
 end
 
@@ -31,6 +31,24 @@ methods (Access = public)
         if (~saturated)
             self.err_i = self.err_i + u * dt;
         end
+
+        % Compute the controller output for time k
+        U = self.kp * u + self.kd * self.err_d + self.ki * self.err_i;
+
+        % Update the error to compute derivative at time k+1
+        self.uPrevious = u;
+    end
+
+    function U = inputs(self, x, target, dt)
+
+        u = target;
+
+        % Update the error rate of change
+        err_d = (u - self.uPrevious) / dt;
+        a = dt / (self.derivativeTrackingFrequency + dt);
+        self.err_d = self.err_d * (1 - a) + err_d * a;
+
+        self.err_i = self.err_i + u * dt;
 
         % Compute the controller output for time k
         U = self.kp * u + self.kd * self.err_d + self.ki * self.err_i;

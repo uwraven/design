@@ -150,6 +150,31 @@ methods (Static)
         q = [sqrt(1 - norm(qv)) reshape(qv, 1, 3)]';
     end
 
+    function q = fromDirection(v, ref)
+        % Requires reference vector to define a rotation from ref to v
+        % Get angle between vectors
+
+        theta = acos(dot(v, ref) / (norm(v) * norm(ref)));
+
+        if (norm(v / norm(v) - ref / norm(ref)) < 1e-5)
+            q = [1 0 0 0]';
+            return
+        end
+
+        u = cross(v, ref);
+        u = u / norm(u);
+
+        c = cos(theta);
+
+        q = [
+            sin(theta)
+            c * u(1)
+            c * u(2)
+            c * u(3)
+        ];
+
+    end
+
     % These methods utilize the member get properties and are generally slower
     function qr = quatProduct(q1, q2)
         qr = [

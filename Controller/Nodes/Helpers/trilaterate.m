@@ -7,7 +7,7 @@ function [x, y, z] = trilaterate(r1, r2, r3, U, Vx, Vy)
     % r3^2 = (x - Vx)^2 + (y - Vy)^2 + z^2
 
     x = (r1^2 - r2^2 + U^2) / (2 * U);
-    y = (r1^2 - r3^2 + norm([Vx Vy])) - 2 * Vx * Vy / (2 * Vy);
+    y = (r1^2 - r3^2 + norm([Vx Vy]) ^ 2 - 2 * Vx * x) / (2 * Vy);
     z = sqrt(r1^2 - x^2 - y^2);
 
 end

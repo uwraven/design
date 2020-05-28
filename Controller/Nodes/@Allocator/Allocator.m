@@ -2,6 +2,7 @@ classdef Allocator < handle
 
 properties (Access = public)
     saturate = false
+    enabled = false
     limits
     clamped
 end
@@ -49,8 +50,8 @@ methods (Access = public)
         
     end
 
-    function U = linearAllocation(self, Ur)
-        % Ur is a vector [Fx Fy Fz Mx My Mz] in body frame
+    function U = clampedLinearAllocation(self, Ur)
+        % Ur is a vector [alx aly alz aax aay aaz] in body frame
         % U is a vector of actuator inputs
 
         % Solve the linear EOM

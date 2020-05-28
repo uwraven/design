@@ -1,5 +1,9 @@
 classdef ReactionControl < handle
 
+properties (Access = public)
+    continuous = false
+end
+
 properties (Access = private)
     thrusters = [];
 end
@@ -24,13 +28,16 @@ methods (Access = public)
         for i = 1:length(self.thrusters)
             thruster = self.thrusters(i);
             thruster.update(dt);
-            if (thruster.firing)
+            F = zeros(3, 1);
+            if (self.continuous)
+                F = -thruster.direction * thruster.pwm.reference;
+            elseif (thruster.firing)
                 F = -thruster.direction * thruster.thrust;
-                self.localizedResultant = self.localizedResultant + [
-                    F,
-                    cross(thruster.position, F)
-                ];
             end
+            self.localizedResultant = self.localizedResultant + [
+                F,
+                cross(thruster.position, F)
+            ];
         end
     end
 
