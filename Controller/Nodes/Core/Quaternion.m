@@ -153,25 +153,43 @@ methods (Static)
     function q = fromDirection(v, ref)
         % Requires reference vector to define a rotation from ref to v
         % Get angle between vectors
+        if (norm(v) > 1e-10 && norm(ref) > 1e-10)
 
-        theta = acos(dot(v, ref) / (norm(v) * norm(ref)));
+            qv = cross(v, ref);
+            q0 = sqrt(norm(v)^2 + norm(ref)^2) + dot(v, ref);
 
-        if (norm(v / norm(v) - ref / norm(ref)) < 1e-5)
+            q = [
+                q0
+                qv
+            ];
+
+            q = q / norm(q);
+
+            if q0 < 0
+                q(1) = -q(1);
+            end
+
+            % theta = acos(dot(v, ref) / (norm(v) * norm(ref)));
+
+            % if (mod(abs(theta), pi) < 1e-8)
+            %     q = [1 0 0 0]';
+            %     return
+            % end
+
+            % u = cross(v, ref);
+            % u = u / norm(u);
+
+            % c = sin(theta / 2);
+
+            % q = [
+            %     cos(theta / 2)
+            %     c * u(1)
+            %     c * u(2)
+            %     c * u(3)
+            % ];
+        else
             q = [1 0 0 0]';
-            return
         end
-
-        u = cross(v, ref);
-        u = u / norm(u);
-
-        c = cos(theta);
-
-        q = [
-            sin(theta)
-            c * u(1)
-            c * u(2)
-            c * u(3)
-        ];
 
     end
 

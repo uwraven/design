@@ -4,13 +4,13 @@ properties (GetAccess = public, SetAccess = private)
     kp = 1
     ki = 0
     kd = 0
+    Kt = 0
+    u_prev = 0;
 end
 
-properties (Access = private)
-    uPrevious = 0;
+properties
     err_d = 0;
     err_i = 0;
-    derivativeTrackingFrequency = 0; % Derivative tracking
 end
 
 methods (Access = public)
@@ -21,46 +21,30 @@ methods (Access = public)
         self.kd = kd;
     end
 
-    function U = update(self, dt, u, saturated)
-        % Update the error rate of change
-        err_d = (u - self.uPrevious) / dt;
-        a = dt / (self.derivativeTrackingFrequency + dt);
-        self.err_d = self.err_d * (1 - a) + err_d * a;
+    function update(self, dt)
 
-        % Update integral error only if controls are not saturated
-        if (~saturated)
-            self.err_i = self.err_i + u * dt;
-        end
-
-        % Compute the controller output for time k
-        U = self.kp * u + self.kd * self.err_d + self.ki * self.err_i;
-
-        % Update the error to compute derivative at time k+1
-        self.uPrevious = u;
     end
 
-    function U = inputs(self, x, target, dt)
+    function U = inputs(self, u, du, dt)
 
-        u = target;
+        err_d = 0;
 
-        % Update the error rate of change
-        err_d = (u - self.uPrevious) / dt;
-        a = dt / (self.derivativeTrackingFrequency + dt);
-        self.err_d = self.err_d * (1 - a) + err_d * a;
-
-        self.err_i = self.err_i + u * dt;
+        err_i = self.err_i + u * dt;
 
         % Compute the controller output for time k
-        U = self.kp * u + self.kd * self.err_d + self.ki * self.err_i;
+        U = self.kp * u + self.kd * du + self.ki * err_i;
 
         % Update the error to compute derivative at time k+1
-        self.uPrevious = u;
+        self.u_prev = u;
+        self.err_d = du;
+        self.err_i = err_i;
     end
 
-    function setGains(self, kp, ki, kd)
+    function setGains(self, kp, ki, kd, Kt)
         self.kp = kp;
         self.ki = ki;
         self.kd = kd;
+        self.Kt = Kt;
     end
 
 end

@@ -1,4 +1,4 @@
-function [A, B] = LinearizedDynamics(m, I)
+function [A, B] = LinearizedDynamics()
     % Wrapper to compute linearized dynamics model for a quaternion parameterized rocket
 
     syms r1 r2 r3 v1 v2 v3 q0 q1 q2 q3 w1 w2 w3 'real';
@@ -16,7 +16,7 @@ function [A, B] = LinearizedDynamics(m, I)
 
     dr = v;
     dv = al;
-    dq = 1 / 2 * skew4(w) * q;
+    dq = 1 / 2 * Quaternion.productArr(q, [0; w]);
     dw = aa;
 
     x = [

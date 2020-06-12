@@ -14,6 +14,10 @@ properties (SetAccess = private, GetAccess = public)
     trilateration
 end
 
+properties (Access = private)
+    allocation
+end
+
 methods
     function self = EngineAssembly()
         self.gimbal = Gimbal();
@@ -24,9 +28,12 @@ methods
     function setAllocation(self, U)
         % U (Fe) is the linear approximation of engine forces requested by the allocator
         % Fex Fey Fez
+
+        self.allocation = U;
+        % allocation = U
  
         % First, convert to proper nonlinear values
-        [Fe, g, b] = self.getNonlinearInputs(U);
+        [Fe, g, b] = self.getLinearInputs(U);
 
         % Compute resultant engine pointing vector
         % Describes the physical position in space where linear
@@ -38,11 +45,13 @@ methods
             cos(b) * cos(g)
         ];
 
+        % enginePointingVector = Ev * Fe / self.engineArm;
+
         % Compute required actuator extensions from difference between
         % engine pointing vector and gimbal mounting vectors
         self.thrust = abs(Fe);
-        self.gimbal.actuatorBeta.setReference(norm(Ev - [self.gimbalArm 0 0]'));
-        self.gimbal.actuatorGamma.setReference(norm(Ev - [0 self.gimbalArm 0]'));
+        self.gimbal.actuatorBeta.setReference(norm(Ev - [0 self.gimbalArm 0]'));
+        self.gimbal.actuatorGamma.setReference(norm(Ev - [self.gimbalArm 0 0]'));
     end
 
     function update(self, dt)
@@ -59,7 +68,7 @@ methods
 
         [x y z] = trilaterate(self.engineArm, self.gimbal.actuatorGamma.x, self.gimbal.actuatorBeta.x, self.gimbalArm, 0, self.gimbalArm);
 
-        thrustDirection = [x y -z]' / norm([x y z]);
+        thrustDirection = [x y -abs(z)]' / norm([x y z]);
         self.trilateration = [x y z];
         
         % Compute localized resultant from current thrust and gimbal trilateration
@@ -67,11 +76,15 @@ methods
             thrustDirection
             zeros(3, 1)
         ];
-        self.localizedResultant = localizedResultant;
+        % self.localizedResultant = localizedResultant;
+
+        self.localizedResultant = self.allocation;
+
+        % localizedError = self.localizedResultant(1:3) - self.allocation
 
     end
 
-    function [Fe, gamma, beta] = linearInputs(self, requested)
+    function [Fe, gamma, beta] = getLinearInputs(self, requested)
         Fe = -requested(3);
         gamma = -requested(2) / Fe;
         beta = -requested(1) / Fe;
@@ -79,9 +92,11 @@ methods
 
 
     function [Fe, gamma, beta] = getNonlinearInputs(self, requested)
-        beta = atan(requested(1) / requested(3));
-        gamma = atan(-requested(2) * sin(beta) / requested(1));
-        Fe = -requested(2) / sin(gamma);
+        % This function performs comparison of small numbers under certain circumstances and can lead
+        % to erronous computation results
+        beta = atansmooth(requested(1), requested(3));
+        gamma = atansmooth(-requested(2) * sin(beta), requested(1));
+        Fe = requested(2) / sin(gamma);
     end
     
 end

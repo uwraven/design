@@ -15,8 +15,8 @@ methods
     end
 
     function setGains(self, Pq, Pw)
-        self.Pq = Pq;
-        self.Pw = Pw;
+        self.Pq = diag(ones(3, 1) .* Pq);
+        self.Pw = diag(ones(3, 1) .* Pw);
     end
 end
 

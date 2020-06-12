@@ -5,36 +5,43 @@ classdef TrajectoryPlanner < handle
 
 properties (Access = public)
     targetCoordinate = [0 0 0]';
-    filterCutoffFrequency = 0;
+    targetCoordinateIndex = 0;
+end
+
+properties (Access = private)
+    targets = [0 0 0 0];
+    t = 0
 end
 
 properties (GetAccess = public, SetAccess = private)
-    filteredCoordinate = [0 0 0]';
+
 end
 
 methods
+    
     function self = TrajectoryPlanner()
         % constructor
     end
 
     function update(self, dt)
-        a = 2 * pi * dt * self.filterCutoffFrequency;
-        if (a > 1)
-            a = 1;
+        self.t = self.t + dt;
+        if self.targetCoordinateIndex < length(self.targets(:,1))
+            if (self.t > self.targets(self.targetCoordinateIndex + 1, 1))
+                self.targetCoordinateIndex = self.targetCoordinateIndex + 1;
+                self.targetCoordinate = self.targets(self.targetCoordinateIndex, 2:4)';
+            end
         end
-        self.filteredCoordinate = self.filteredCoordinate * (1 - a) + self.targetCoordinate * a;
     end
 
-    function setInitialTarget(self, target)
-        self.filteredCoordinate = target;
+    function setTargets(self, targets)
+        self.targets = targets;
+        self.targetCoordinate = targets(1, 2:4)'
     end
 
-end
-
-methods
-    function set.targetCoordinate(self, target)
-        self.targetCoordinate = reshape(target, 3, 1);
+    function resetClock(self)
+        self.t = 0;
     end
+
 end
 
 end

@@ -6,7 +6,7 @@ function raven = Raven()
     %%%%%%%%%% VEHICLE PLANT %%%%%%%%%%
 
     vehicle.m = 15;
-    vehicle.J = diag(ones(3, 1));
+    vehicle.J = diag([2, 2, 2]);
     
 
     %%%%%%%%%% ACTUATORS %%%%%%%%%%%
@@ -17,12 +17,12 @@ function raven = Raven()
     RCSRadialArm = 0.01;            % Radial distance from center of rcs pod to thruster
 
     vehicle.rcs.setThrusters([
-        ColdGasThruster(coldGasThrusterMax, [RCSRadialArm -RCSRadialArm -RCSArm], [1 0 0])
-        ColdGasThruster(coldGasThrusterMax, [RCSRadialArm RCSRadialArm -RCSArm], [1 0 0])
-        ColdGasThruster(coldGasThrusterMax, [0 RCSRadialArm -RCSArm], [0 1 0])
-        ColdGasThruster(coldGasThrusterMax, [-RCSRadialArm RCSRadialArm -RCSArm], [-1 0 0])
-        ColdGasThruster(coldGasThrusterMax, [-RCSRadialArm -RCSRadialArm -RCSArm], [-1 0 0])
-        ColdGasThruster(coldGasThrusterMax, [0 -RCSRadialArm -RCSArm], [0 -1 0])
+        ColdGasThruster(coldGasThrusterMax, [RCSRadialArm -RCSRadialArm 0], [1 0 0])
+        ColdGasThruster(coldGasThrusterMax, [RCSRadialArm RCSRadialArm 0], [1 0 0])
+        ColdGasThruster(coldGasThrusterMax, [0 RCSRadialArm 0], [0 1 0])
+        ColdGasThruster(coldGasThrusterMax, [-RCSRadialArm RCSRadialArm 0], [-1 0 0])
+        ColdGasThruster(coldGasThrusterMax, [-RCSRadialArm -RCSRadialArm 0], [-1 0 0])
+        ColdGasThruster(coldGasThrusterMax, [0 -RCSRadialArm 0], [0 -1 0])
     ]);
     vehicle.rcsMountingDistance = RCSArm;
 
@@ -46,34 +46,48 @@ function raven = Raven()
 
     %%%%%%%%%%% CONTROLLERS %%%%%%%%%%%
 
-    xPGain = 1;
-    xIGain = 0;
-    xDGain = 0;
-    zPGain = 1;
-    zIGain = 0;
-    zDGain = 0;
-    attitudeProportionalGain = diag([0, 0, 0]);
-    attitudeRateGain = diag([0, 0, 0]);
+    vehicle.controller = CascadedController();
 
-    vehicle.controller.trajectoryController.x.setGains(xPGain, xIGain, xDGain);
-    vehicle.controller.trajectoryController.y.setGains(xPGain, xIGain, xDGain);
-    vehicle.controller.trajectoryController.z.setGains(zPGain, zIGain, zDGain);
-    vehicle.controller.rateController.setGains(attitudeProportionalGain, attitudeRateGain);
+    vehicle.accelerationLimit = norm([0.4 0.4]);
+    vehicle.controller.horizontalAccelerationLimit = 0.4;
+    vehicle.controller.verticalAccelerationLimit = 2;
 
+    wnx = 0.8;
+    drx = 1.05;
+    wnz = 0.4;
+    drz = 1.1;
+
+    kpx = 18;
+    kdx = 9;
+    kix = 2.5;
+    Ktx = 0;
+
+    kpz = 12;
+    kdz = 7;
+    kiz = 3;
+    Ktz = 0;
+
+    pq = 18;
+    pw = 24;
+
+    vehicle.controller.trajectoryController.x.setGains(kpx, kix, kdx, Ktx);
+    vehicle.controller.trajectoryController.y.setGains(kpx, kix, kdx, Ktx);
+    vehicle.controller.trajectoryController.z.setGains(kpz, kiz, kdz, Ktz);
+    vehicle.controller.trajectoryPrefilter.x.setGains(wnx, drx, kpx, kix, kdx);
+    vehicle.controller.trajectoryPrefilter.y.setGains(wnx, drx, kpx, kix, kdx);
+    vehicle.controller.trajectoryPrefilter.z.setGains(wnz, drz, kpz, kiz, kdz);
+    vehicle.controller.rateController.setGains(pq, pw);
 
     %%%%%%%%%%% ALLOCATOR %%%%%%%%%%%%%
 
     vehicle.allocator.setActuatorArms([engineArm, RCSArm, RCSRadialArm]);
     vehicle.allocator.setActuatorLimits([
-        0 coldGasThrusterMax        % RCS Thruster 1
-        0 coldGasThrusterMax        % RCS Thruster 2
-        0 coldGasThrusterMax        % RCS Thruster 3
-        0 coldGasThrusterMax        % RCS Thruster 4
-        0 coldGasThrusterMax        % RCS Thruster 5
-        0 coldGasThrusterMax        % RCS Thruster 6
         -engineThrustMax * sind(gimbalRange) engineThrustMax * sind(gimbalRange)    % Engine assembly X thrust
         -engineThrustMax * sind(gimbalRange) engineThrustMax * sind(gimbalRange)    % Engine assembly Y thrust
-        engineThrustMin, engineThrustMax                                            % Engine assembly Z thrust
+        -engineThrustMax -engineThrustMin                     
+        -coldGasThrusterMax coldGasThrusterMax        % Coupled RCS Thruster 1
+        -coldGasThrusterMax coldGasThrusterMax        % Coupled RCS Thruster 1
+        -coldGasThrusterMax coldGasThrusterMax        % Coupled RCS Thruster 1                                     % Engine assembly Z thrust
     ]);
     
     % Return vehicle

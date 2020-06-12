@@ -42,9 +42,39 @@ methods (Access = public)
     end
 
     function setAllocation(self, U)
+        % U = [ Fr1' Fr2' Fr3' ]
+        % Convert from primed inputs to signed inputs
+        u = self.getSignedInputs(U);
+
         for i = 1:length(self.thrusters)
-            self.thrusters(i).pwm.reference = U(i);
+            self.thrusters(i).pwm.reference = u(i);
         end
+    end
+
+    function u = getSignedInputs(self, U)
+        % U = [Fr1' Fr2' Fr3']
+        % Convert to [Fr1 Fr2 Fr3 Fr4 Fr5 Fr6]
+        u = zeros(6, 1);
+        
+        if (U(1) > 0)
+            u(4) = abs(U(1));
+        else
+            u(2) = abs(U(1));
+        end
+
+        if (U(2) > 0)
+            u(5) = abs(U(2));
+        else
+            u(1) = abs(U(2));
+        end
+
+        if (U(3) > 0)
+            u(6) = abs(U(3));
+        else
+            u(3) = abs(U(3));
+        end
+
+        return;
     end
 
     function setThrusters(self, thrusters)

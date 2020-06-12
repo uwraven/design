@@ -8,6 +8,8 @@ classdef Vehicle < handle
 		JInv = diag(ones(3));
 		engineMountingDistance;
 		rcsMountingDistance;
+		accelerationLimit;
+		plantEnabled = true;
 
 		% Guidance and control
 		trajectoryPlanner
@@ -30,9 +32,11 @@ classdef Vehicle < handle
 		% Vehicle, allocator, and controller states
 		x
 		uAllocated
+		uRequestedLocal
 		uRequestedGlobal
 		uRealizedLocal
 		uRealizedGlobal
+		t = 0
 	end
 	
 
@@ -50,6 +54,8 @@ classdef Vehicle < handle
 			self.engine = EngineAssembly();
 			self.rcs = ReactionControl();
 
+			self.accelerationLimit = 0.8;
+
 		end
 
 
@@ -64,12 +70,17 @@ classdef Vehicle < handle
 
 			% Compute requested inputs from controller
 			% Get global acceleration and angular acceleration from controller node
-			uRequestedGlobalController = self.controller.inputs(self.x, self.trajectoryPlanner.filteredCoordinate, dt);
+			positionFeedforward = [ 0 0 -9.81 ]';
+			uRequestedGlobal = self.controller.inputs(self.x, self.trajectoryPlanner.targetCoordinate, positionFeedforward, dt);
 
-			% Add gravity feedforward to requested acceleration
-			gravityFeedforward = -9.81;
-			self.uRequestedGlobal = uRequestedGlobalController + [0 0 gravityFeedforward 0 0 0]';
+			% Compute acceleration pointing vector using limits
+			if norm(uRequestedGlobal(1:2)) > self.accelerationLimit
+				accelerationRatio = abs(self.accelerationLimit / norm(uRequestedGlobal(1:2)));
+				uRequestedGlobal = [ accelerationRatio * uRequestedGlobal(1:2); uRequestedGlobal(3:end) ];
+			end
 
+			self.uRequestedGlobal = uRequestedGlobal;
+			
 			if (self.allocator.enabled)
 
 				% Convert global acceleration request to vehicle fixed frame
@@ -81,9 +92,8 @@ classdef Vehicle < handle
 					self.J * uRequestedLocal(4:6)
 				];
 
-				% Allocate inputs
-				uAllocated = self.allocator.clampedLinearAllocation(uRequestedLocalForce);
-				self.uAllocated = uAllocated;
+				self.uRequestedLocal = uRequestedLocalForce;
+				self.uAllocated = self.allocator.allocate(uRequestedLocalForce);;
 
 				% Assign inputs to actuators
 				self.engine.setAllocation(self.uAllocated(1:3));
@@ -92,19 +102,39 @@ classdef Vehicle < handle
 				self.engine.update(dt);
 				self.rcs.update(dt);
 
-				resultant = self.getRequestResultant();
-				self.uRealizedGlobal = resultant;
+				% gx = self.engine.gimbal.actuatorGamma.x
+				% bx = self.engine.gimbal.actuatorBeta.x
+				% engineLocalResult = self.engine.localizedResultant
+				% rcsLocalResult = self.rcs.localizedResultant
 
+				if self.plantEnabled
+
+					resultant = self.getRequestResultant();
+					self.uRealizedGlobal = resultant;
+
+				else
+
+					resultant = self.allocator.H * self.uAllocated;
+					self.uRealizedLocal = resultant;
+					self.uRealizedGlobal = resultant;
+					self.uRealizedGlobal(1:3) = Quaternion.rotateBy(resultant(1:3), self.x(7:10));
+
+				end
+
+				% localRealizedError = self.uRealizedLocal - uRequestedLocalForce
 			else
 				% Integrate plants to maintain simulation continuity
 				% self.engine.update(dt);
 				% self.rcs.update(dt);
 				% No allocation and no actuation, use pure and global controller outputs
-				self.uRealizedGlobal = self.uRequestedGlobal * self.m;
+				self.uRealizedGlobal = [
+					self.m * self.uRequestedGlobal(1:3)
+					self.J * self.uRequestedGlobal(4:6)
+				];
 			end
 			
 			self.integratePlant(dt);
-
+			self.t = self.t + dt;
 		end
 
 
@@ -116,7 +146,11 @@ classdef Vehicle < handle
 			qs = Quaternion.fromVec(x(7:9));
 			X0 = reshape(x, length(x), 1);
 			self.x = [X0(1:6); qs; X0(10:12)];
-			self.trajectoryPlanner.setInitialTarget(self.x(1:3));
+			if (self.controller.independentPrefilter)
+				self.controller.trajectoryPrefilter.x.setInitialValue(X0(1));
+				self.controller.trajectoryPrefilter.y.setInitialValue(X0(2));
+				self.controller.trajectoryPrefilter.z.setInitialValue(X0(3));
+			end
 		end
 
 	end
@@ -132,8 +166,12 @@ classdef Vehicle < handle
 		function dX = plantDynamics(self, x, dt)
 			dX = [
 				x(4:6)
-				self.uRealizedGlobal(1:3) / self.m + [0 0 9.81]'
-				1 / 2 * skew4(x(11:13)) * x(7:10)
+				self.uRealizedGlobal(1:3) / self.m + [0 0 9.81]' + [
+					0.1 * (sin(10 * self.t + 0.3) * sin(2 * self.t) + randn())
+					0.08 * (sin(10 * self.t) * sin(4 * self.t) + randn())
+					0.03 * (sin(2 * self.t + 0.023) * sin(5 * self.t) + randn())
+				];
+				1 / 2 * Quaternion.productArr(x(7:10), [0; x(11:13)]);
 				self.JInv * self.uRealizedGlobal(4:6)
 			];
 		end
@@ -141,13 +179,17 @@ classdef Vehicle < handle
 		function uResultant = getRequestResultant(self)
 
 			% Get vehicle frame forces
-			self.uRealizedLocal = [
+			uRealizedLocal = [
 				self.engine.localizedResultant(1:3) + self.rcs.localizedResultant(1:3),
-				cross([0 0 self.engineMountingDistance]', self.engine.localizedResultant(4:6)) + cross([0 0 -self.rcsMountingDistance]', self.rcs.localizedResultant(4:6))
+				cross([0 0 self.engineMountingDistance]', self.engine.localizedResultant(1:3)) + ...
+					cross([0 0 -self.rcsMountingDistance]', self.rcs.localizedResultant(1:3)) + ...
+					self.rcs.localizedResultant(4:6)
 			];
 
+			self.uRealizedLocal = uRealizedLocal;
+			
 			uResultant = [
-				Quaternion.rotateBy(self.uRealizedLocal(1:3), self.x(7:10));
+				Quaternion.rotateBy(uRealizedLocal(1:3), self.x(7:10));
 				self.uRealizedLocal(4:6)
 			];
 
